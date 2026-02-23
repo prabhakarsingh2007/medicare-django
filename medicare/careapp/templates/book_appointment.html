@@ -31,17 +31,21 @@
         <h3 class="text-2xl font-bold text-gray-900 tracking-tight">
           {{ doctor.name }}
         </h3>
-        <p class="text-blue-600 font-medium text-sm">
-          {{ doctor.experience }} Years Professional Experience
-        </p>
+        <div class="flex flex-col gap-1">
+            <p class="text-blue-600 font-medium text-sm">
+              {{ doctor.experience }} Years Professional Experience
+            </p>
+            <p class="text-gray-500 text-sm font-bold">
+              Consultation Fee: ₹{{ doctor.fees|default:"500" }}
+            </p>
+        </div>
       </div>
     </div>
-    <form method="post" action="{% url 'book_appointment' doctor.slug %}">
 
+    <form id="appointmentForm" method="post" action="{% url 'book_appointment' doctor.slug %}">
       {% csrf_token %}
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div class="space-y-1.5">
           <label class="text-sm font-semibold text-gray-700 ml-1">Full Name</label>
           <input type="text" name="name" required placeholder="Enter your name"
@@ -63,8 +67,6 @@
         <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-sm font-semibold text-gray-700 ml-1">Date</label>
-
-              <!-- FIXED DATE INPUT -->
               <input type="date" id="appointmentDate" name="date" required
                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none">
             </div>
@@ -77,14 +79,14 @@
         </div>
       </div>
 
-      <div class="space-y-1.5">
+      <div class="space-y-1.5 mb-6">
         <label class="text-sm font-semibold text-gray-700 ml-1">Note for Doctor (Optional)</label>
         <textarea name="message" rows="3" placeholder="Describe your symptoms briefly..."
           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"></textarea>
       </div>
 
-      <button type="submit"
-        class="w-full mt-6 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 rounded-xl font-bold text-lg
+      <button type="submit" id="submitBtn"
+        class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 rounded-xl font-bold text-lg
                shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:scale-[0.98] 
                transition duration-300 flex items-center justify-center gap-2">
         <span>Proceed to Payment</span>
@@ -93,15 +95,78 @@
       <p class="text-center text-xs text-gray-400 mt-4">
         By clicking confirm, you agree to our terms of service and privacy policy.
       </p>
-
     </form>
   </div>
 </div>
 
-<!-- ✅ Disable Back Date -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script>
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById("appointmentDate").setAttribute("min", today);
+// 1. Date Restriction
+const dateInput = document.getElementById('appointmentDate');
+const today = new Date().toISOString().split('T')[0];
+dateInput.setAttribute('min', today);
+
+// 2. Form Submission Handling
+document.getElementById("appointmentForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = document.getElementById("submitBtn");
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "Processing...";
+
+    fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: { "X-CSRFToken": "{{ csrf_token }}" }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const options = {
+                "key": data.razorpay_key,
+                "amount": data.amount,
+                "currency": "INR",
+                "name": "Medicare",
+                "description": "Consultation Fee",
+                "order_id": data.order_id,
+                "handler": function (response) {
+                    // YAHAN BADLAV HAI: Redirecting to successfull_payment view
+                    // Variables match exactly with your successfull_payment GET requests
+                    const successUrl = "{% url 'successful_payment' %}";
+                    const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&doctor_id={{ doctor.id }}&appointment_id=${data.appointment_id}&date=${form.date.value}&time=${form.time.value}`;
+                    
+                    window.location.href = successUrl + params;
+                },
+                "prefill": {
+                    "name": form.name.value,
+                    "email": form.email.value,
+                    "contact": form.phone.value
+                },
+                "theme": { "color": "#2563eb" },
+                "modal": {
+                    "ondismiss": function() {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = "Proceed to Payment";
+                    }
+                }
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+        } else {
+            alert("❌ Booking Error: " + data.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Proceed to Payment";
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Server error. Check Internet.");
+        submitBtn.disabled = false;
+    });
+});
 </script>
 
 {% endblock %}

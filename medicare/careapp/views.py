@@ -54,82 +54,77 @@ def book_appointment(request, slug):
     doctor = get_object_or_404(Doctor, slug=slug)
 
     if request.method == "POST":
+        try:
+            # 1. Form Data Lena
+            full_name = request.POST.get("name")
+            email = request.POST.get("email")
+            phone = request.POST.get("phone")
+            date_str = request.POST.get("date")
+            time_str = request.POST.get("time")
+            message = request.POST.get("message")
 
-        # 1️⃣ Form data
-        full_name = request.POST.get("name")
-        email = request.POST.get("email")
-        phone = request.POST.get("phone")
-        date_str = request.POST.get("date")   # string
-        time_str = request.POST.get("time")   # string
-        message = request.POST.get("message")
+            # 2. Basic Validation
+            if not all([full_name, email, phone, date_str, time_str]):
+                return JsonResponse({'success': False, 'message': 'Saari fields bharna zaroori hai.'})
 
-        # ❌ Safety check
-        if not date_str or not time_str:
-            messages.error(request, "Date and Time are required")
-            return redirect('book_appointment', slug=slug)
+            selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            selected_time = datetime.strptime(time_str, "%H:%M").time()
+            
+            # 3. Past Date Check
+            if selected_date < timezone.now().date():
+                return JsonResponse({'success': False, 'message': 'Aap purani date book nahi kar sakte.'})
 
-        # 2️⃣ STRING → DATE & TIME (IMPORTANT FIX)
-        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        selected_time = datetime.strptime(time_str, "%H:%M").time()
+            # 4. Duplicate Slot Check
+            if Appointment.objects.filter(doctor=doctor, date=selected_date, time=selected_time).exists():
+                return JsonResponse({'success': False, 'message': 'Ye slot pehle se booked hai.'})
 
-        # 3️⃣ Current date & time
-        today = timezone.now().date()
-        current_time = timezone.now().time()
+            # 5. FIXED: Fees Logic (NoneType Error Solution)
+            # Pehle check karein ki fees None toh nahi hai
+            raw_fees = doctor.fees if doctor.fees is not None else 500
+            
+            try:
+                # float mein convert karke int karna safe rehta hai (e.g. 500.00 -> 500)
+                amount_in_paise = int(float(raw_fees) * 100)
+            except (ValueError, TypeError):
+                amount_in_paise = 50000  # Fallback: 500 INR
 
-        # 4️⃣ Past date check
-        if selected_date < today:
-            messages.error(request, "Please select a valid date.")
-            return redirect('book_appointment', slug=slug)
+            # 6. Create Pending Appointment
+            appointment = Appointment.objects.create(
+                user=request.user,
+                doctor=doctor,
+                name=full_name,
+                email=email,
+                phone=phone,
+                date=selected_date,
+                time=selected_time,
+                message=message,
+                status="Pending"
+            )
 
-        # 5️⃣ Same day past time check
-        if selected_date == today and selected_time < current_time:
-            messages.error(request, "Please select a valid time.")
-            return redirect('book_appointment', slug=slug)
+            # 7. Razorpay Order
+            order_data = {
+                "amount": amount_in_paise,
+                "currency": "INR",
+                "payment_capture": 1
+            }
+            razorpay_order = client.order.create(data=order_data)
 
-        # 6️⃣ Duplicate slot check (FIXED)
-        if Appointment.objects.filter(
-            doctor=doctor,
-            date=selected_date,
-            time=selected_time
-        ).exists():
-            messages.error(request, "This time slot is already booked.")
-            return redirect('book_appointment', slug=slug)
+            return JsonResponse({
+                'success': True,
+                'order_id': razorpay_order['id'],
+                'amount': razorpay_order['amount'],
+                'razorpay_key': settings.RAZORPAY_KEY_ID,
+                'appointment_id': appointment.id
+            })
 
-        # 7️⃣ SAVE APPOINTMENT (FIXED)
-        appointment = Appointment.objects.create(
-            user=request.user,          # ✅ ADD
-            doctor=doctor,
-            name=full_name,
-            email=email,
-            phone=phone,
-            date=selected_date,         # ✅ FIX
-            time=selected_time,         # ✅ FIX
-            message=message,
-            status="Pending"
-        )
-
-        print("************************************************")
-        print("Appointment saved:", appointment.id)
-        print("************************************************")
-
-        # 8️⃣ Razorpay order
-        order_data = {
-            "amount": int(doctor.fees) * 100,
-            "currency": "INR",
-            "payment_capture": 1
-        }
-        razorpay_order = client.order.create(data=order_data)
-
-        # 9️⃣ JSON response
-        return JsonResponse({
-            'success': True,
-            'order_id': razorpay_order['id'],
-            'amount': razorpay_order['amount'],
-            'razorpay_key': settings.RAZORPAY_KEY_ID,
-            'appointment_id': appointment.id
-        })
+        except Exception as e:
+            # Console mein print karein debugging ke liye
+            print(f"ERROR: {str(e)}") 
+            return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})
 
     return render(request, "book_appointment.html", {"doctor": doctor})
+
+
 
 @login_required(login_url='login')
 def payment(request, id):
@@ -166,65 +161,58 @@ def payment(request, id):
 
 @login_required(login_url='login')
 def successfull_payment(request):
+    # Data nikalna (Inke naam JavaScript se match hone chahiye)
     payment_id = request.GET.get("payment_id")
     order_id = request.GET.get("order_id")
     doctor_id = request.GET.get("doctor_id")
     appointment_id = request.GET.get("appointment_id")
-    date = request.GET.get("date")
-    time = request.GET.get("time")
+    
+    # 1. Doctor fetch karein
+    doctor = get_object_or_404(Doctor, id=doctor_id)
 
-    doctor = Doctor.objects.get(id=doctor_id)
-
-    # Fallback if appointment_id is None or invalid
+    # 2. Appointment dhundna
     appointment = None
     if appointment_id and appointment_id != 'None':
         try:
             appointment = Appointment.objects.get(id=appointment_id)
         except Appointment.DoesNotExist:
             appointment = None
-    if not appointment:
-        # Try to get latest appointment for this doctor and user (if logged in)
-        user = request.user if request.user.is_authenticated else None
-        if user:
-            appointment = Appointment.objects.filter(doctor=doctor, user=user).order_by('-created_at').first()
-        else:
-            appointment = Appointment.objects.filter(doctor=doctor).order_by('-created_at').first()
-        if not appointment:
-            return render(request, "appointment_success.html", {
-                "doctor": doctor,
-                "appointment": None,
-                "payment_id": payment_id,
-                "date": date,
-                "time": time,
-                "error": "Appointment not found. Please contact support."
-            })
 
-    #  Update appointment status to Confirmed
+    # Fallback agar appointment_id nahi mila
+    if not appointment:
+        appointment = Appointment.objects.filter(
+            doctor=doctor, 
+            user=request.user
+        ).order_by('-created_at').first()
+
+    if not appointment:
+        return render(request, "appointment_success.html", {
+            "doctor": doctor,
+            "error": "Appointment details not found."
+        })
+
+    # 3. Status update aur Payment record banana
     appointment.status = "Confirmed"
     appointment.save()
 
-    #  Create payment record
-    payment_amount = doctor.fees if doctor.fees is not None else 700
-    Payment.objects.create(
-        appointment=appointment,
+    # Payment record (Maan lijiye aapka Payment model status=BooleanField hai)
+    payment_amount = doctor.fees if doctor.fees else 500
+    Payment.objects.get_or_create(
         payment_id=payment_id,
-        order_id=order_id,
-        amount=payment_amount,
-        status=True
+        defaults={
+            'appointment': appointment,
+            'order_id': order_id,
+            'amount': payment_amount,
+            'status': True
+        }
     )
-
-    # Use appointment date/time if not provided in GET
-    if not date:
-        date = appointment.date
-    if not time:
-        time = appointment.time
 
     return render(request, "appointment_success.html", {
         "doctor": doctor,
         "appointment": appointment,
         "payment_id": payment_id,
-        "date": date,
-        "time": time
+        "date": appointment.date,
+        "time": appointment.time
     })
 
 @login_required(login_url='login')

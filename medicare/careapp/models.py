@@ -37,9 +37,11 @@ class Doctor(models.Model):
         return self.name
 
 
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
 
 class Appointment(models.Model):
-
     STATUS_CHOICES = (
         ("Pending", "Pending"),
         ("Confirmed", "Confirmed"),
@@ -48,19 +50,14 @@ class Appointment(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
-
+    doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE, related_name="appointments")
     name = models.CharField("Full Name", max_length=100)
     email = models.EmailField()
     phone = models.CharField(max_length=15)
-
     date = models.DateField()
     time = models.TimeField()
-
     message = models.TextField(blank=True, null=True)
-
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="Pending")
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -70,22 +67,6 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.doctor.name}"
-    
-    def save(self, *args, **kwargs):
-        if not self.pk:  
-            if Appointment.objects.filter(doctor=self.doctor, date=self.date, time=self.time).exists():
-                raise ValueError("This time slot is already booked for the selected doctor.")
-            
-            if not self.created_at:
-                self.created_at = timezone.now()
-
-            if not self.updated_at:
-                self.updated_at = timezone.now()
-
-        super().save(*args, **kwargs)
-
-
-
 
 
 class Payment(models.Model):
