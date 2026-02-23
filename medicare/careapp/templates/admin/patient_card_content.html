@@ -1,0 +1,30 @@
+<div class="flex justify-center mb-4">
+    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-2xl font-black text-blue-600 shadow-inner">
+        {{ patient.name|first|upper }}
+    </div>
+</div>
+
+<div class="text-center">
+    <h2 class="text-lg font-bold text-gray-900 truncate">{{ patient.name }}</h2>
+    <p class="text-gray-500 text-xs mb-1">{{ patient.email }}</p>
+    <p class="text-blue-600 text-xs font-bold mb-3">{{ patient.phone }}</p>
+    
+    {% if status == "Today" %}
+    <div class="inline-block px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full mb-4 uppercase">
+        ⏰ Slot: {{ patient.time }}
+    </div>
+    {% else %}
+    <div class="text-[10px] text-gray-400 mb-4 italic">
+        Last Visit: {{ patient.date }}
+    </div>
+    {% endif %}
+</div>
+
+<div class="flex justify-center gap-2">
+    <a href="tel:{{ patient.phone }}" class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition">
+        📞
+    </a>
+    <a href="#" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-200 transition">
+        Details
+    </a>
+</div>
