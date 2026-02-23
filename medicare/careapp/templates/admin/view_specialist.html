@@ -1,0 +1,51 @@
+{% extends "admin/adminbase.html" %}
+{% block content %}
+
+<div class="p-8 bg-slate-50 min-h-screen font-sans">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">Specialties</h1>
+            <p class="text-slate-500 font-medium">Manage medical departments and specialist categories</p>
+        </div>
+        
+        <a href="{% url 'add_specialist' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 transition-all transform hover:-translate-y-1 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
+            Add New Specialist
+        </a>
+    </div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for s in specialists %}
+        <div class="group bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-100/50 transition-all duration-500 flex flex-col items-center text-center relative overflow-hidden">
+            
+            <div class="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-4">
+                {% if s.icon %}
+                    <img src="{{ s.icon.url }}" alt="{{ s.name }}" class="w-12 h-12 object-contain ">
+                {% else %}
+                    <svg class="w-10 h-10 text-slate-300 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-width="2"/></svg>
+                {% endif %}
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800 mb-1">{{ s.name }}</h3>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Medical Department</p>
+
+            <div class="mt-6 flex gap-2">
+                <a href="#" class="p-2 bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+                <a href="#" class="p-2 bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+            </div>
+
+            <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center">
+            <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">No Specialist Categories Found</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

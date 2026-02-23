@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-[#f8fafc] py-12 px-4 relative overflow-hidden">
+    
+    <div class="absolute top-0 -left-4 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+    <div class="absolute bottom-0 -right-4 w-72 h-72 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+
+    <div class="max-w-md w-full z-10">
+        <div class="bg-white/90 backdrop-blur-xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.1)] rounded-3xl p-8 border border-white">
+            
+            <div class="text-center mb-10">
+                <h1 class="text-4xl font-extrabold pb-2 leading-tight bg-gradient-to-r from-blue-700 to-cyan-500 bg-clip-text text-transparent inline-block">
+                    Welcome Back
+                </h1>
+                <p class="text-gray-500 text-sm mt-2">Please enter your details to login.</p>
+            </div>
+
+            <form method="POST" action="{% url 'login' %}" class="space-y-6">
+                {% csrf_token %}
+
+                <div class="group">
+                    <label class="block mb-1.5 ml-1 text-sm font-semibold text-gray-700 group-focus-within:text-blue-600 transition-colors">
+                        Username or Email
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206"></path></svg>
+                        </span>
+                        <input type="text" name="username" placeholder="john@example.com" required
+                               class="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all">
+                    </div>
+                </div>
+
+                <div class="group">
+                    <div class="flex justify-between items-center mb-1.5 ml-1">
+                        <label class="text-sm font-semibold text-gray-700 group-focus-within:text-blue-600 transition-colors">
+                            Password
+                        </label>
+                        <a href="#" class="text-xs font-bold text-blue-600 hover:text-cyan-600 transition-colors">Forgot Password?</a>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        </span>
+                        <input id="password" type="password" name="password" placeholder="••••••••" required
+                               class="w-full pl-11 pr-12 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all">
+                        
+                        <button type="button" onclick="togglePassword()" class="absolute right-3 inset-y-0 flex items-center text-gray-400 hover:text-blue-600 focus:outline-none transition-colors">
+                            <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full mt-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold py-3.5 rounded-2xl
+                               shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:scale-95
+                               transition duration-300 flex items-center justify-center gap-2">
+                    <span>Sign In</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l4-4m0 0l-4-4m4 4H9m11 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                <p class="text-gray-500 text-sm">
+                    Don't have an account? 
+                    <a href="{% url 'register' %}" class="text-blue-600 font-bold hover:text-blue-700 transition-colors">
+                        Create Account
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword() {
+    const password = document.getElementById("password");
+    const eyeIcon = document.getElementById("eye-icon");
+    if (password.type === "password") {
+        password.type = "text";
+        eyeIcon.classList.add("text-blue-600");
+    } else {
+        password.type = "password";
+        eyeIcon.classList.remove("text-blue-600");
+    }
+}
+</script>
+
+<style>
+@keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob {
+    animation: blob 7s infinite;
+}
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="bg-gray-50 min-h-screen">
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-20">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-5xl font-black mb-6">About Our Healthcare Platform</h1>
+            <p class="text-lg text-blue-100 max-w-3xl mx-auto">
+                We are dedicated to providing fast, reliable, and professional healthcare services 
+                through modern technology and trusted medical experts.
+            </p>
+        </div>
+    </section>
+
+
+    <!-- Our Story -->
+    <section class="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
+        
+        <div>
+            <h2 class="text-3xl font-black text-gray-800 mb-6">Our Story</h2>
+            <p class="text-gray-600 mb-4">
+                Our platform was created to simplify healthcare access for everyone. 
+                We connect patients with experienced doctors, diagnostic labs, ambulance 
+                services, and medicine delivery — all in one place.
+            </p>
+
+            <p class="text-gray-600">
+                Our mission is to make healthcare accessible, affordable, and convenient 
+                for families and individuals across the country.
+            </p>
+        </div>
+
+        <div>
+            <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=900&q=80"
+                 class="rounded-2xl shadow-lg">
+        </div>
+
+    </section>
+
+
+    <!-- Mission Vision -->
+    <section class="bg-white py-20">
+        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12">
+
+            <div class="bg-blue-50 p-10 rounded-2xl shadow-sm">
+                <h3 class="text-2xl font-bold text-blue-700 mb-4">Our Mission</h3>
+                <p class="text-gray-600">
+                    To provide seamless healthcare services through digital innovation 
+                    and ensure every patient receives quality treatment without delay.
+                </p>
+            </div>
+
+            <div class="bg-indigo-50 p-10 rounded-2xl shadow-sm">
+                <h3 class="text-2xl font-bold text-indigo-700 mb-4">Our Vision</h3>
+                <p class="text-gray-600">
+                    To become the most trusted healthcare platform delivering advanced 
+                    medical services anytime, anywhere.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- Why Choose Us -->
+    <section class="max-w-7xl mx-auto px-6 py-20">
+        <h2 class="text-3xl font-black text-center text-gray-800 mb-12">
+            Why Choose Us
+        </h2>
+
+        <div class="grid md:grid-cols-3 gap-10">
+
+            <div class="bg-white p-8 rounded-2xl shadow hover:shadow-lg transition">
+                <h4 class="text-xl font-bold mb-3 text-blue-600">Verified Doctors</h4>
+                <p class="text-gray-600">
+                    All doctors are certified and experienced professionals.
+                </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow hover:shadow-lg transition">
+                <h4 class="text-xl font-bold mb-3 text-blue-600">24/7 Emergency Support</h4>
+                <p class="text-gray-600">
+                    Emergency ambulance and medical support available anytime.
+                </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-2xl shadow hover:shadow-lg transition">
+                <h4 class="text-xl font-bold mb-3 text-blue-600">Easy Online Booking</h4>
+                <p class="text-gray-600">
+                    Book appointments, tests, and medicines in just a few clicks.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- Statistics -->
+    <section class="bg-blue-600 text-white py-20">
+        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-4 text-center gap-10">
+
+            <div>
+                <h3 class="text-4xl font-black">500+</h3>
+                <p class="text-blue-100">Doctors</p>
+            </div>
+
+            <div>
+                <h3 class="text-4xl font-black">10K+</h3>
+                <p class="text-blue-100">Patients Served</p>
+            </div>
+
+            <div>
+                <h3 class="text-4xl font-black">50+</h3>
+                <p class="text-blue-100">Hospitals</p>
+            </div>
+
+            <div>
+                <h3 class="text-4xl font-black">24/7</h3>
+                <p class="text-blue-100">Support</p>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- Call To Action -->
+    <section class="py-20 text-center">
+        <h2 class="text-3xl font-black text-gray-800 mb-6">
+            Your Health, Our Priority
+        </h2>
+
+        <p class="text-gray-600 mb-8">
+            Book your appointment today and get expert medical consultation.
+        </p>
+
+        <a href="/"
+           class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition">
+           Book Appointment
+        </a>
+    </section>
+
+</div>
+
+{% endblock %}

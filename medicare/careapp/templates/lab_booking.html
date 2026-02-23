@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-14">
+
+  <h2 class="text-4xl font-extrabold text-center mb-12
+             bg-gradient-to-r from-blue-600 to-cyan-500 
+             bg-clip-text text-transparent">
+    Book Lab Test
+  </h2>
+
+  <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+
+    <form method="POST" action="{% url 'lab_booking' %}" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Select Test -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">
+          Select Test
+        </label>
+        <select name="test" required
+          class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+          <option value="">-- Choose Test --</option>
+          {% for t in tests %}
+            <option value="{{ t.id }}">{{ t.test_name }} - ₹{{ t.price }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Date & Time -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Date
+          </label>
+          <input type="date" name="date" id="labDate" required
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Time
+          </label>
+          <input type="time" name="time" required
+            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">
+          Sample Collection Address
+        </label>
+        <textarea name="address" rows="3" required
+          placeholder="Enter full address for home sample collection"
+          class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit"
+        class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:-translate-y-0.5 transition">
+        Book Lab Test
+      </button>
+
+    </form>
+
+  </div>
+</div>
+
+<!-- Disable past date -->
+<script>
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById("labDate").setAttribute("min", today);
+</script>
+{% endblock %}

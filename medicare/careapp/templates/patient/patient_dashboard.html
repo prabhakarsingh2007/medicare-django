@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="min-h-screen bg-gray-100 py-10 px-4">
+
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Heading -->
+        <h1 class="text-2xl sm:text-3xl font-bold mb-8 text-gray-800">
+            Welcome Patient 👋
+        </h1>
+
+        <!-- Dashboard Cards -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Book Appointment -->
+            <a href=""
+               class="bg-white shadow-lg rounded-2xl p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+
+                <div class="flex items-center space-x-4">
+                    <div class="bg-blue-100 text-blue-600 p-4 rounded-full text-xl">
+                        🩺
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            Book Appointment
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            Schedule doctor visit
+                        </p>
+                    </div>
+                </div>
+
+            </a>
+
+            <!-- My Appointments -->
+            <a href="{% url "my_appointments" %}"
+               class="bg-white shadow-lg rounded-2xl p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+
+                <div class="flex items-center space-x-4">
+                    <div class="bg-green-100 text-green-600 p-4 rounded-full text-xl">
+                        📅
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            My Appointments
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            View appointment history
+                        </p>
+                    </div>
+                </div>
+
+            </a>
+
+            <!-- Profile -->
+            <a href="{% url "patient_profile" %}"
+               class="bg-white shadow-lg rounded-2xl p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+
+                <div class="flex items-center space-x-4">
+                    <div class="bg-purple-100 text-purple-600 p-4 rounded-full text-xl">
+                        👤
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            My Profile
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            Update personal details
+                        </p>
+                    </div>
+                </div>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

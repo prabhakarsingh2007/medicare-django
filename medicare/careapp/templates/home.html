@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-[#f8fafc] min-h-screen font-sans">
+
+    <div class="relative bg-white pt-16 pb-32 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center lg:text-left lg:w-3/5">
+                <h1 class="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] mb-6">
+                    Professional Care <br>
+                    <span class="text-blue-600">Tailored to You.</span>
+                </h1>
+                <p class="text-lg text-slate-500 mb-8 max-w-lg">
+                    Access world-class healthcare with our top-rated medical specialists. Quality care is just a click
+                    away.
+                </p>
+            </div>
+        </div>
+        <div class="hidden lg:block absolute top-0 right-0 w-1/2 h-full">
+            <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80"
+                class="w-full h-full object-cover opacity-20 lg:opacity-100 mask-linear-gradient" alt="Hospital">
+        </div>
+    </div>
+    <section class="max-w-7xl mx-auto px-6 -mt-20 relative z-20">
+        <div class="flex items-center justify-between mb-10">
+            <h2 class="text-2xl font-bold text-slate-800">Choose a Department</h2>
+            <span class="h-[2px] flex-1 bg-slate-200 mx-6 hidden md:block"></span>
+            <div class="flex gap-2">
+                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                <div class="w-3 h-3 rounded-full bg-blue-200"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {% for sp in specialists %}
+            <a href="{% url 'specialist_doctors' sp.id %}" class="group">
+                <div
+                    class="relative bg-white rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-500 border border-slate-100">
+
+                    <div class="h-56 relative overflow-hidden">
+                        {% if sp.icon %}
+                        <img src="{{ sp.icon.url }}" alt="{{ sp.name }}"
+                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                        {% else %}
+                        <div
+                            class="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
+                            <span class="text-5xl opacity-40">🏥</span>
+                        </div>
+                        {% endif %}
+
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        </div>
+                    </div>
+
+                    <div class="p-6 text-center">
+                        <h3 class="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                            {{ sp.name }}
+                        </h3>
+                        <p class="text-sm text-slate-400 mt-2 mb-4">Certified Clinical Experts</p>
+
+                        <div
+                            class="inline-flex items-center justify-center w-full py-3 px-4 bg-blue-50 text-blue-700 rounded-2xl font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            View Doctors
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="absolute top-4 left-4">
+                        <span
+                            class="bg-white/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full text-blue-600 shadow-sm">
+                            24/7 Service
+                        </span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="col-span-full text-center py-20 bg-white rounded-[32px] shadow-inner">
+                <p class="text-slate-400 text-lg">Our experts are joining soon. Stay tuned!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    <div class="max-w-7xl mx-auto px-6 py-24">
+        <div class="mb-12">
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Our Fast-Track Services</h2>
+            <p class="text-slate-500 font-medium">Zaroorat ke waqt, sabse tez aur bharosemand help.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <div
+                class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                <div class="relative z-10">
+                    <div
+                        class="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+                                stroke-width="2" />
+                            <path
+                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1"
+                                stroke-width="2" />
+                        </svg>
+                    </div>
+                    <h4 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Ambulance Booking</h4>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">GPS-enabled high-speed ambulances 24/7
+                        available. Life support and ICU facilities onboard.</p>
+                    <a href="{% url 'ambulance_booking' %}"
+                        class="inline-flex items-center text-orange-600 font-black text-xs uppercase tracking-widest hover:gap-2 transition-all">
+                        Book Now <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" />
+                        </svg>
+                    </a>
+                </div>
+                <div
+                    class="absolute -right-6 -bottom-6 w-32 h-32 bg-orange-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700">
+                </div>
+            </div>
+
+            <div
+                class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-200/50 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                <div class="relative z-10">
+                    <div
+                        class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                                stroke-width="2" />
+                        </svg>
+                    </div>
+                    <h4 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Pathology Lab</h4>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Home sample collection within 30 mins.
+                        Accurate digital reports delivered straight to your WhatsApp.</p>
+                    <a href="{% url 'lab_booking' %}"
+                        class="inline-flex items-center text-blue-600 font-black text-xs uppercase tracking-widest hover:gap-2 transition-all">
+                        Schedule Test <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" />
+                        </svg>
+                    </a>
+                </div>
+                <div
+                    class="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700">
+                </div>
+            </div>
+
+            <div
+                class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-200/50 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                <div class="relative z-10">
+                    <div
+                        class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                                stroke-width="2" />
+                        </svg>
+                    </div>
+                    <div
+                        class="absolute top-8 right-8 bg-emerald-500 text-white text-[10px] font-black px-2 py-1 rounded-lg animate-bounce">
+                        15 MINS</div>
+                    <h4 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Medicine Delivery</h4>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Super-fast delivery of genuine medicines.
+                        Upload your prescription and get it at your doorstep.</p>
+                    <a href="{% url 'medicine_order' %} " class=" inline-flex items-center text-emerald-600 font-black
+                        text-xs uppercase tracking-widest hover:gap-2 transition-all">
+                        Order Now <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" />
+                        </svg>
+                    </a>
+                </div>
+                <div
+                    class="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700">
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% if messages %}
+    <div class="fixed top-5 right-5 z-50 space-y-4">
+        {% for message in messages %}
+        <div class="flex items-center p-4 mb-4 text-emerald-800 rounded-[1.5rem] bg-emerald-50 border border-emerald-100 shadow-2xl shadow-emerald-200/50 animate-bounce-short">
+            <div class="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center mr-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <div class="pr-8">
+                <p class="font-black uppercase text-[10px] tracking-widest opacity-60">Success</p>
+                <p class="font-bold text-sm">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<style>
+    @keyframes bounce-short {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-short {
+        animation: bounce-short 0.5s ease-out;
+    }
+</style>
+</div>
+
+<style>
+    /* Hero image mask effect */
+    .mask-linear-gradient {
+        mask-image: linear-gradient(to left, black 60%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to left, black 60%, transparent 100%);
+    }
+</style>
+{% endblock %}

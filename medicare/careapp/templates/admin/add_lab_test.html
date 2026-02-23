@@ -1,0 +1,77 @@
+{% extends "admin/adminbase.html" %}
+{% block content %}
+
+<div class="p-6 bg-slate-50 min-h-screen font-sans flex items-center justify-center">
+    <div class="max-w-2xl w-full">
+        
+        <div class="mb-6 flex items-center justify-between">
+            <a href="{% url 'lab_test_list' %}" class="text-sm font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-2 transition-colors group">
+                <span class="group-hover:-translate-x-1 transition-transform">←</span>
+                Back to Lab Portal
+            </a>
+            <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Diagnostic Center</span>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-white overflow-hidden">
+            <div class="p-8 md:p-12">
+                
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-800 tracking-tight">Add Lab Test</h2>
+                        <p class="text-slate-500 text-sm font-medium">Define new diagnostic tests and pathology services.</p>
+                    </div>
+                </div>
+
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Test Name</label>
+                        <input type="text" name="name" required
+                            placeholder="e.g. Full Body Checkup or CBC"
+                            class="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm">
+                    </div>
+
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Service Price (₹)</label>
+                        <div class="relative">
+                            <input type="number" name="price" required
+                                placeholder="0.00"
+                                class="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white text-slate-800 rounded-2xl p-4 pl-12 transition-all outline-none shadow-sm">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 font-bold">
+                                ₹
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Test Description / Preparation</label>
+                        <textarea name="description" rows="4"
+                            placeholder="Add details about the test (e.g. 12 hours fasting required)"
+                            class="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm resize-none"></textarea>
+                    </div>
+
+                    <div class="pt-4 flex flex-col sm:flex-row gap-4">
+                        <button type="submit"
+                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-200 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Save Lab Test
+                        </button>
+                        
+                        <a href="{% url 'lab_test_list' %}"
+                            class="px-8 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-all text-center">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

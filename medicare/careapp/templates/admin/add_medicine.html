@@ -1,0 +1,68 @@
+{% extends "admin/adminbase.html" %}
+{% block content %}
+
+<div class="p-6 bg-slate-50 min-h-screen font-sans flex items-center justify-center">
+    <div class="max-w-xl w-full">
+        
+        <div class="mb-6 flex items-center justify-between">
+            <a href="{% url 'medicine_list' %}" class="text-sm font-bold text-slate-400 hover:text-slate-600 flex items-center gap-2 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Back to Inventory
+            </a>
+            <span class="text-xs font-black text-slate-300 uppercase tracking-widest">New Entry</span>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-white overflow-hidden">
+            <div class="p-8 md:p-10">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-black text-slate-800 tracking-tight">Add Medicine</h1>
+                    <p class="text-slate-500 text-sm">Fill in the official details from the medicine packaging.</p>
+                </div>
+
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Medicine Name</label>
+                        <input type="text" name="name" 
+                               class="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm" 
+                               placeholder="e.g. Crocin 650mg" required>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="group">
+                            <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Price (₹)</label>
+                            <input type="number" name="price" 
+                                   class="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm" 
+                                   placeholder="Price" required>
+                        </div>
+                        <div class="group">
+                            <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Stock Quantity</label>
+                            <input type="number" name="stock"
+                                   class="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm" 
+                                   placeholder="Qty" required>
+                        </div>
+                    </div>
+
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Expiry Date</label>
+                        <input type="date" name="expiry_date" 
+                               class="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm cursor-pointer" 
+                               required>
+                    </div>
+
+                    <div class="pt-4 flex gap-4">
+                        <button type="submit" class="flex-1 bg-slate-900 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-slate-200 transition-all duration-300 transform hover:-translate-y-1">
+                            Add to Inventory
+                        </button>
+                        <button type="reset" class="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

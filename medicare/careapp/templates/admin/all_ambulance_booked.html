@@ -1,0 +1,86 @@
+{% extends "admin/adminbase.html" %}
+
+{% block content %}
+<div class="bg-slate-50 min-h-screen p-6 md:p-10 font-sans">
+    <div class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">Fleet Bookings</h1>
+            <p class="text-slate-500 font-medium">Monitoring all active and past emergency requests</p>
+        </div>
+        <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Requests</p>
+            <p class="text-2xl font-black text-red-600">{{ bookings|length }}</p>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for booking in bookings %}
+        <div class="group bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-red-100/40 transition-all duration-500 overflow-hidden flex flex-col">
+            
+            <div class="px-8 pt-8 flex justify-between items-start">
+                <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-red-600 group-hover:text-white transition-colors duration-500">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" stroke-width="2"/><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M13 16h1m-1 0H4m9 0h7a1 1 0 001-1v-4a1 1 0 00-1-1h-2l-3-4h-2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest 
+                    {% if booking.status == 'Pending' %} bg-amber-100 text-amber-600 
+                    {% elif booking.status == 'Completed' %} bg-emerald-100 text-emerald-600 
+                    {% else %} bg-blue-100 text-blue-600 {% endif %}">
+                    {{ booking.status }}
+                </span>
+            </div>
+
+            <div class="p-8 flex-grow">
+                <h3 class="text-2xl font-black text-slate-800 mb-1">{{ booking.ambulance.name }}</h3>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-4">
+                    {{ booking.ambulance.ambulance_type }}
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-tight">Pickup Location</p>
+                            <p class="text-sm font-bold text-slate-700 leading-tight">{{ booking.pickup_location }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-tight">Drop Location</p>
+                            <p class="text-sm font-bold text-slate-700 leading-tight">{{ booking.drop_location }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase">Patient</p>
+                    <p class="text-xs font-bold text-slate-700">{{ booking.patient.username }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[9px] font-black text-slate-400 uppercase">Schedule</p>
+                    <p class="text-xs font-bold text-slate-700">{{ booking.date }} | {{ booking.time }}</p>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-white flex gap-2">
+                <a href="#" class="flex-1 text-center py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-black transition-all">VIEW DETAILS</a>
+                <button class="p-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center">
+            <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800">No Bookings Found</h3>
+            <p class="text-slate-500">All quiet on the emergency front.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

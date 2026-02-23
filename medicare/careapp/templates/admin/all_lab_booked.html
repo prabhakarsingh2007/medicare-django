@@ -1,0 +1,74 @@
+{% extends "admin/adminbase.html" %}
+
+{% block content %}
+<div class="bg-slate-50 min-h-screen p-6 md:p-10 font-sans">
+    <div class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">Lab Test Bookings</h1>
+            <p class="text-slate-500 font-medium">Monitoring all active and past lab test requests</p>
+        </div>
+        <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Bookings</p>
+            <p class="text-2xl font-black text-blue-600">{{ bookings|length }}</p>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for booking in bookings %}
+        <div class="group bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-100/40 transition-all duration-500 overflow-hidden flex flex-col">
+            
+            <div class="px-8 pt-8 flex justify-between items-start">
+                <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" stroke-width="2"/><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M13 16h1m-1 0H4m9 0h7a1 1 0 001-1v-4a1 1 0 00-1-1h-2l-3-4h-2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest 
+                    {% if booking.status == 'Pending' %} bg-amber-100 text-amber-600 
+                    {% elif booking.status == 'Completed' %} bg-emerald-100 text-emerald-600 
+                    {% else %} bg-blue-100 text-blue-600 {% endif %}">
+                    {{ booking.status }}
+                </span>
+            </div>
+
+            <div class="p-8 flex-grow">
+                <h3 class="text-2xl font-black text-slate-800 mb-1">{{ booking.lab_test.name }}</h3>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-4">
+                    {{ booking.lab_test.category }}
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-tight">Patient</p>
+                            <p class="text-sm font-bold text-slate-700 leading-tight">{{ booking.patient.username }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-tight">Address</p>
+                            <p class="text-sm font-bold text-slate-700 leading-tight">{{ booking.address }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase">Quantity</p>
+                    <p class="text-xs font-bold text-slate-700">{{ booking.quantity }}</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase">Booked On</p>
+                    <p class="text-xs font-bold text-slate-700">{{ booking.created_at|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center">
+            <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">No Lab Test Bookings Found</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

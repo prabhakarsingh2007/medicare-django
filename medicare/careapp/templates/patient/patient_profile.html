@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-8 my-20">
+
+    <h2 class="text-2xl font-bold mb-6 text-center">
+        Patient Profile
+    </h2>
+
+    <div class="space-y-4">
+
+        <div class="border p-3 rounded">
+            <label class="font-semibold text-gray-600">Username</label>
+            <p>{{ user.username }}</p>
+        </div>
+
+        <div class="border p-3 rounded">
+            <label class="font-semibold text-gray-600">Full Name</label>
+            <p>{{ user.first_name }} {{ user.last_name }}</p>
+        </div>
+
+        <div class="border p-3 rounded">
+            <label class="font-semibold text-gray-600">Email</label>
+            <p>{{ user.email }}</p>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

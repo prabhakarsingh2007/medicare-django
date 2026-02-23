@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-[#f8fafc] py-12 px-4 md:px-8">
+    <div class="max-w-7xl mx-auto">
+
+        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div class="max-w-xl">
+                <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-1.5 rounded-full mb-4">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-width="2.5"/></svg>
+                    <span class="text-blue-700 font-black text-[10px] uppercase tracking-[0.15em]">ISO 9001:2015 Certified Lab</span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">
+                    Diagnostics & <span class="text-blue-600">Pathology</span>
+                </h1>
+                <p class="text-slate-500 font-medium">Ghar se sample collection aur 24 ghante mein accurate digital reports.</p>
+            </div>
+
+            <div class="bg-white p-2 rounded-[2rem] shadow-sm border border-slate-200 flex items-center gap-4 px-6 h-16">
+                <span class="text-sm font-bold text-slate-700">Home Collection</span>
+                <button class="w-12 h-6 bg-blue-600 rounded-full relative">
+                    <span class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            
+            <div class="lg:col-span-8 space-y-8">
+                
+                <div class="relative group">
+                    <input type="text" placeholder="Search for tests (e.g. Thyroid, CBC, Vitamin D)..." 
+                           class="w-full bg-white border-2 border-slate-100 rounded-[2rem] py-5 px-8 pl-14 focus:border-blue-500 focus:ring-0 transition-all font-bold text-slate-700 shadow-sm">
+                    <svg class="w-6 h-6 text-slate-400 absolute left-6 top-5 group-focus-within:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"/></svg>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" stroke-width="2"/></svg>
+                            </div>
+                            <span class="bg-emerald-50 text-emerald-600 text-[10px] font-black px-3 py-1 rounded-full uppercase">Reports in 12h</span>
+                        </div>
+                        <h4 class="text-xl font-black text-slate-800 mb-1">Full Body Checkup</h4>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4 italic">Includes 85 parameters</p>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="text-2xl font-black text-slate-900">₹1,499</span>
+                                <span class="text-sm text-slate-400 line-through ml-2">₹2,999</span>
+                            </div>
+                            <button class="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-black group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" stroke-width="2"/></svg>
+                            </div>
+                            <span class="bg-rose-50 text-rose-600 text-[10px] font-black px-3 py-1 rounded-full uppercase">Fastest Seller</span>
+                        </div>
+                        <h4 class="text-xl font-black text-slate-800 mb-1">Diabetes Screening</h4>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4 italic">HbA1c, Fasting Sugar</p>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="text-2xl font-black text-slate-900">₹499</span>
+                            </div>
+                            <button class="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="lg:col-span-4">
+                <div class="bg-slate-900 rounded-[3rem] p-8 text-white sticky top-10 shadow-2xl shadow-blue-900/20">
+                    <h3 class="text-2xl font-black mb-8 border-b border-slate-800 pb-4">Booking Summary</h3>
+                    
+                    <div class="space-y-6 mb-10">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-sm">Full Body Checkup</p>
+                                <p class="text-[10px] text-slate-400 uppercase tracking-widest">1 Person</p>
+                            </div>
+                            <p class="font-bold text-blue-400">₹1,499</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 border-t border-slate-800 pt-6">
+                        <div class="flex justify-between text-slate-400 text-sm">
+                            <span>Subtotal</span>
+                            <span>₹1,499</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400 text-sm">
+                            <span>Collection Charges</span>
+                            <span class="text-emerald-400">FREE</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-4">
+                            <span class="text-xl font-black">Total</span>
+                            <span class="text-3xl font-black text-blue-500">₹1,499</span>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-lg mt-10 hover:bg-blue-700 transition-all shadow-xl shadow-blue-900/50">
+                        Proceed to Checkout
+                    </button>
+                    
+                    <p class="text-center text-[10px] text-slate-500 mt-6 uppercase tracking-widest font-bold">
+                        Secure 256-bit encrypted payment
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center">
+    <div class="max-w-2xl w-full bg-white rounded-[2rem] shadow-2xl p-8 md:p-12 border border-slate-100">
+        
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-black text-slate-800">Book Ambulance</h2>
+            <p class="text-slate-500 font-medium">Fast emergency dispatch service</p>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Select Ambulance</label>
+                <select name="ambulance" required class="w-full bg-slate-50 border-2 border-transparent focus:border-red-500 p-4 rounded-2xl outline-none font-bold">
+                    <option value="">-- Choose Available Vehicle --</option>
+                    {% for a in ambulances %}
+                        <option value="{{ a.id }}">{{ a.name }} ({{ a.ambulance_type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Pickup Location</label>
+                    <input type="text" name="pickup" required placeholder="Enter pickup address"
+                        class="w-full bg-slate-50 border-2 border-transparent focus:border-red-500 p-4 rounded-2xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Drop Location</label>
+                    <input type="text" name="drop" required placeholder="Enter hospital name"
+                        class="w-full bg-slate-50 border-2 border-transparent focus:border-red-500 p-4 rounded-2xl outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Date</label>
+                    <input type="date" name="date" required id="bDate"
+                        class="w-full bg-slate-50 border-2 border-transparent focus:border-red-500 p-4 rounded-2xl outline-none font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                    <input type="time" name="time" required
+                        class="w-full bg-slate-50 border-2 border-transparent focus:border-red-500 p-4 rounded-2xl outline-none font-bold">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-red-100 transition-all transform hover:-translate-y-1 uppercase tracking-widest">
+                Confirm Booking
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Prevents selecting past dates
+    document.getElementById('bDate').min = new Date().toISOString().split("T")[0];
+</script>
+
+{% endblock %}

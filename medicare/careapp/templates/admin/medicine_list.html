@@ -1,0 +1,98 @@
+{% extends "admin/adminbase.html" %}
+{% block content %}
+
+<div class="p-6 bg-slate-50 min-h-screen font-sans">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Medicine Inventory</h1>
+            <p class="text-sm text-slate-500 font-medium">Manage your stock levels and track expiry dates</p>
+        </div>
+        
+        <div class="flex gap-3">
+            <a href="{% url 'add_medicine' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Add New Medicine
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Items</p>
+            <p class="text-2xl font-black text-slate-800">{{ medicines|length }}</p>
+        </div>
+        </div>
+
+    <div class="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50/50 border-b border-slate-100">
+                        <th class="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-widest">Medicine Name</th>
+                        <th class="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Price</th>
+                        <th class="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Stock</th>
+                        <th class="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Expiry Date</th>
+                        <th class="px-8 py-5 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for m in medicines %}
+                    <tr class="group hover:bg-slate-50/80 transition-colors">
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <span class="font-bold text-slate-700">{{ m.name }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-5 text-center font-bold text-slate-600">
+                            ₹{{ m.price }}
+                        </td>
+
+                        <td class="px-6 py-5 text-center">
+                            {% if m.stock > 10 %}
+                                <span class="text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{{ m.stock }}</span>
+                            {% elif m.stock > 0 %}
+                                <span class="text-sm font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">{{ m.stock }} (Low)</span>
+                            {% else %}
+                                <span class="text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-lg">Out</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-5 text-center">
+                            <div class="inline-flex flex-col">
+                                <span class="text-sm font-bold text-slate-700">{{ m.expiry_date|date:"d M Y" }}</span>
+                                <span class="text-[10px] font-black uppercase tracking-tight text-slate-400">Validated</span>
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-5 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
+                                <a href="#" class="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-emerald-600 transition-colors shadow-sm border border-transparent hover:border-slate-100">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </a>
+                                <a href="#" class="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-rose-600 transition-colors shadow-sm border border-transparent hover:border-slate-100">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-8 py-20 text-center">
+                            <div class="flex flex-col items-center opacity-40">
+                                <svg class="w-12 h-12 mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4a2 2 0 012-2m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Inventory is Empty</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
