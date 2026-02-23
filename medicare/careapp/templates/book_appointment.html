@@ -2,43 +2,21 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-14">
-
-  <h2 class="text-4xl md:text-5xl font-extrabold text-center mb-12 py-2 leading-relaxed
-             bg-gradient-to-r from-blue-600 to-cyan-500 
-             bg-clip-text text-transparent">
+  <h2 class="text-4xl md:text-5xl font-extrabold text-center mb-12 py-2 leading-relaxed bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
     Book Appointment
   </h2>
 
   <div class="bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-gray-100">
-
     <div class="flex flex-col sm:flex-row items-center gap-6 mb-10 pb-8 border-b border-gray-50">
       {% if doctor.image %}
-        <div class="relative">
-          <div class="overflow-hidden rounded-2xl w-28 h-28 shadow-md">
-            <img src="{{ doctor.image.url }}"
-                 class="w-full h-full object-cover hover:scale-110 transition duration-500"
-                 alt="{{ doctor.name }}">
-          </div>
-        </div>
-      {% else %}
-        <div class="w-28 h-28 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 
-                    flex items-center justify-center text-blue-600 text-4xl font-bold shadow-inner">
-          {{ doctor.name|slice:":1" }}
+        <div class="overflow-hidden rounded-2xl w-28 h-28 shadow-md">
+          <img src="{{ doctor.image.url }}" class="w-full h-full object-cover" alt="{{ doctor.name }}">
         </div>
       {% endif %}
-
       <div class="text-center sm:text-left">
-        <h3 class="text-2xl font-bold text-gray-900 tracking-tight">
-          {{ doctor.name }}
-        </h3>
-        <div class="flex flex-col gap-1">
-            <p class="text-blue-600 font-medium text-sm">
-              {{ doctor.experience }} Years Professional Experience
-            </p>
-            <p class="text-gray-500 text-sm font-bold">
-              Consultation Fee: ₹{{ doctor.fees|default:"500" }}
-            </p>
-        </div>
+        <h3 class="text-2xl font-bold text-gray-900">{{ doctor.name }}</h3>
+        <p class="text-blue-600 font-medium text-sm">9:00 AM - 5:00 PM (Available Slots)</p>
+        <p class="text-gray-500 text-sm font-bold">Fee: ₹{{ doctor.fees|default:"500" }}</p>
       </div>
     </div>
 
@@ -47,54 +25,37 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div class="space-y-1.5">
-          <label class="text-sm font-semibold text-gray-700 ml-1">Full Name</label>
-          <input type="text" name="name" required placeholder="Enter your name"
-            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent transition-all outline-none">
+          <label class="text-sm font-semibold text-gray-700">Full Name</label>
+          <input type="text" name="name" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
-          <input type="email" name="email" required placeholder="you@example.com"
-            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent transition-all outline-none">
+          <label class="text-sm font-semibold text-gray-700">Email Address</label>
+          <input type="email" name="email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-sm font-semibold text-gray-700 ml-1">Phone Number</label>
-          <input type="tel" name="phone" required placeholder="+91 00000 00000"
-            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent transition-all outline-none">
+          <label class="text-sm font-semibold text-gray-700">Phone Number</label>
+          <input type="tel" name="phone" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-sm font-semibold text-gray-700 ml-1">Date</label>
-              <input type="date" id="appointmentDate" name="date" required
-                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none">
-            </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-semibold text-gray-700">Select Date</label>
+          <input type="date" id="appointmentDate" name="date" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
 
-            <div class="space-y-1.5">
-              <label class="text-sm font-semibold text-gray-700 ml-1">Time</label>
-              <input type="time" name="time" required
-                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none">
-            </div>
+        <div class="col-span-1 md:col-span-2 space-y-3 mt-4">
+          <label class="text-sm font-semibold text-gray-700">Chose a Time Slot (30 Min Each)</label>
+          <input type="hidden" name="time" id="selectedTimeValue" required>
+          <div id="slotGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <p class="col-span-full text-gray-400 text-sm italic">Pehle date select karein...</p>
+          </div>
         </div>
       </div>
 
-      <div class="space-y-1.5 mb-6">
-        <label class="text-sm font-semibold text-gray-700 ml-1">Note for Doctor (Optional)</label>
-        <textarea name="message" rows="3" placeholder="Describe your symptoms briefly..."
-          class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"></textarea>
-      </div>
-
-      <button type="submit" id="submitBtn"
-        class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-4 rounded-xl font-bold text-lg
-               shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:scale-[0.98] 
-               transition duration-300 flex items-center justify-center gap-2">
-        <span>Proceed to Payment</span>
+      <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition duration-300">
+        Proceed to Payment
       </button>
-
-      <p class="text-center text-xs text-gray-400 mt-4">
-        By clicking confirm, you agree to our terms of service and privacy policy.
-      </p>
     </form>
   </div>
 </div>
@@ -102,21 +63,66 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-// 1. Date Restriction
+// --- 1. SLOT GENERATION LOGIC ---
 const dateInput = document.getElementById('appointmentDate');
-const today = new Date().toISOString().split('T')[0];
-dateInput.setAttribute('min', today);
+const slotGrid = document.getElementById('slotGrid');
+const hiddenTimeInput = document.getElementById('selectedTimeValue');
 
-// 2. Form Submission Handling
+const todayStr = new Date().toISOString().split('T')[0];
+dateInput.setAttribute('min', todayStr);
+
+function generateSlots() {
+    const selectedDate = dateInput.value;
+    if (!selectedDate) return;
+
+    slotGrid.innerHTML = ''; 
+    const now = new Date();
+    const isToday = (selectedDate === todayStr);
+
+    for (let hour = 9; hour < 17; hour++) {
+        [0, 30].forEach(min => {
+            const slotTime = new Date();
+            slotTime.setHours(hour, min, 0, 0);
+            const timeVal = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            const timeDisplay = `${displayHour}:${String(min).padStart(2, '0')} ${ampm}`;
+            const isPast = isToday && (slotTime <= now);
+            
+            const btn = document.createElement('div');
+            btn.innerText = timeDisplay;
+            
+            if (isPast) {
+                btn.className = "p-3 text-center text-xs bg-gray-100 text-gray-400 rounded-lg border border-gray-200 cursor-not-allowed";
+            } else {
+                btn.className = "p-3 text-center text-xs bg-white border border-blue-200 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-50 transition-all slot-item";
+                btn.onclick = function() {
+                    document.querySelectorAll('.slot-item').forEach(el => el.classList.remove('bg-blue-600', 'text-white', 'border-blue-600'));
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                    hiddenTimeInput.value = timeVal;
+                };
+            }
+            slotGrid.appendChild(btn);
+        });
+    }
+}
+dateInput.addEventListener('change', generateSlots);
+
+// --- 2. PAYMENT & SUBMIT LOGIC ---
 document.getElementById("appointmentForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    
+    e.preventDefault(); // JSON screen par aane se rokne ke liye ye zaroori hai
+
+    if (!hiddenTimeInput.value) {
+        alert("Please select a time slot!");
+        return;
+    }
+
     const form = this;
     const submitBtn = document.getElementById("submitBtn");
-    
     submitBtn.disabled = true;
-    submitBtn.innerHTML = "Processing...";
+    submitBtn.innerHTML = "Processing Payment...";
 
+    // Backend se Order ID mangwana
     fetch(form.action, {
         method: "POST",
         body: new FormData(form),
@@ -125,6 +131,7 @@ document.getElementById("appointmentForm").addEventListener("submit", function(e
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Razorpay Popup kholna
             const options = {
                 "key": data.razorpay_key,
                 "amount": data.amount,
@@ -133,11 +140,9 @@ document.getElementById("appointmentForm").addEventListener("submit", function(e
                 "description": "Consultation Fee",
                 "order_id": data.order_id,
                 "handler": function (response) {
-                    // YAHAN BADLAV HAI: Redirecting to successfull_payment view
-                    // Variables match exactly with your successfull_payment GET requests
+                    // Payment success ke baad redirect
                     const successUrl = "{% url 'successful_payment' %}";
-                    const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&doctor_id={{ doctor.id }}&appointment_id=${data.appointment_id}&date=${form.date.value}&time=${form.time.value}`;
-                    
+                    const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&doctor_id={{ doctor.id }}&appointment_id=${data.appointment_id}&date=${dateInput.value}&time=${hiddenTimeInput.value}`;
                     window.location.href = successUrl + params;
                 },
                 "prefill": {
@@ -156,17 +161,17 @@ document.getElementById("appointmentForm").addEventListener("submit", function(e
             const rzp = new Razorpay(options);
             rzp.open();
         } else {
-            alert("❌ Booking Error: " + data.message);
+            alert("Error: " + data.message);
             submitBtn.disabled = false;
             submitBtn.innerHTML = "Proceed to Payment";
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert("Server error. Check Internet.");
+        alert("Server error. Please try again.");
         submitBtn.disabled = false;
+        submitBtn.innerHTML = "Proceed to Payment";
     });
 });
 </script>
-
 {% endblock %}

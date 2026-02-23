@@ -48,6 +48,10 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import datetime, timedelta
+from django.utils import timezone
+from datetime import datetime, time
 
 @login_required(login_url='login')
 def book_appointment(request, slug):
@@ -55,7 +59,7 @@ def book_appointment(request, slug):
 
     if request.method == "POST":
         try:
-            # 1. Form Data Lena
+            # 1. Data Lena
             full_name = request.POST.get("name")
             email = request.POST.get("email")
             phone = request.POST.get("phone")
@@ -67,26 +71,45 @@ def book_appointment(request, slug):
             if not all([full_name, email, phone, date_str, time_str]):
                 return JsonResponse({'success': False, 'message': 'Saari fields bharna zaroori hai.'})
 
+            # Time aur Date Parse karein
             selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             selected_time = datetime.strptime(time_str, "%H:%M").time()
             
-            # 3. Past Date Check
-            if selected_date < timezone.now().date():
+            # --- VALIDATION START ---
+            
+            # A. Current Date aur Time (Local)
+            now_local = timezone.localtime(timezone.now())
+            current_date = now_local.date()
+            current_time = now_local.time()
+
+            # B. Working Hours Check (9 AM to 5 PM)
+            start_limit = time(9, 0)
+            end_limit = time(17, 0) # 5 PM tak bookings, yani aakhri slot 4:30-5:00
+            if not (start_limit <= selected_time < end_limit):
+                return JsonResponse({'success': False, 'message': 'Clinic sirf subah 9 AM se sham 5 PM tak khula hai.'})
+
+            # C. Backdate Check
+            if selected_date < current_date:
                 return JsonResponse({'success': False, 'message': 'Aap purani date book nahi kar sakte.'})
+
+            # D. Past Time Check (Agar aaj ki date hai)
+            if selected_date == current_date:
+                if selected_time <= current_time:
+                    return JsonResponse({'success': False, 'message': 'Ye waqt beet chuka hai. Future ka slot choose karein.'})
+
+            # E. 30-Minute Slot Validation
+            if selected_time.minute not in [0, 30]:
+                return JsonResponse({'success': False, 'message': 'Invalid time format. Sirf 30-minute slots hi available hain.'})
+
+            # --- VALIDATION END ---
 
             # 4. Duplicate Slot Check
             if Appointment.objects.filter(doctor=doctor, date=selected_date, time=selected_time).exists():
-                return JsonResponse({'success': False, 'message': 'Ye slot pehle se booked hai.'})
+                return JsonResponse({'success': False, 'message': 'Ye slot pehle se booked hai. Dusra slot chunein.'})
 
-            # 5. FIXED: Fees Logic (NoneType Error Solution)
-            # Pehle check karein ki fees None toh nahi hai
+            # 5. Fees Logic
             raw_fees = doctor.fees if doctor.fees is not None else 500
-            
-            try:
-                # float mein convert karke int karna safe rehta hai (e.g. 500.00 -> 500)
-                amount_in_paise = int(float(raw_fees) * 100)
-            except (ValueError, TypeError):
-                amount_in_paise = 50000  # Fallback: 500 INR
+            amount_in_paise = int(float(raw_fees) * 100)
 
             # 6. Create Pending Appointment
             appointment = Appointment.objects.create(
@@ -118,12 +141,10 @@ def book_appointment(request, slug):
             })
 
         except Exception as e:
-            # Console mein print karein debugging ke liye
             print(f"ERROR: {str(e)}") 
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})
 
     return render(request, "book_appointment.html", {"doctor": doctor})
-
 
 
 @login_required(login_url='login')
