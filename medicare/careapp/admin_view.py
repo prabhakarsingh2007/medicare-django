@@ -6,20 +6,26 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 
 
+from django.utils import timezone
+
 @staff_member_required
 def dashboard(request):
-        doctor_count = Doctor.objects.count()
-        patient_count = Patient.objects.count()
-        appointment_count = Appointment.objects.count()
-        return render(request, "admin/dashboard.html", {
-            "doctor_count": doctor_count, 
-            "patient_count": patient_count, 
-            "appointment_count": appointment_count
-        })
+    today = timezone.now().date()
+    
+    context = {
+        "doctor_count": Doctor.objects.count(),
+        "patient_count": Patient.objects.count(),
+        "appointment_count": Appointment.objects.count(),
+        # Naye fields dashboard ko live banane ke liye
+        "today_count": Appointment.objects.filter(date=today).count(),
+        "recent_appointments": Appointment.objects.all().order_by('-id')[:5], 
+        "today_date": today,
+    }
+    return render(request, "admin/dashboard.html", context)
 
 @staff_member_required
 def view_doctor(request):
-     doctors = Doctor.objects.all()
+     doctors = Doctor.objects.all().order_by('specialist__name', 'name')
      return render(request, "admin/view_doctor.html",{"doctors": doctors})
 from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
@@ -53,8 +59,7 @@ def view_patient(request):
 
 @staff_member_required
 def view_appointment(request):
-    # Saare appointments
-    appointments = Appointment.objects.all().order_by('-date')
+    appointments = Appointment.objects.all().order_by('-date','time')
     return render(request, 'admin/view_appoiment.html', {"appointments": appointments})
 
 @staff_member_required

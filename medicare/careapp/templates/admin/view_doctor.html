@@ -18,79 +18,72 @@
     </a>
 </div>
 
-<div class="mb-10">
-    <div class="bg-blue-600 rounded-[2rem] p-6 text-white flex items-center justify-between relative overflow-hidden shadow-xl shadow-blue-100">
-        <div class="relative z-10">
-            <h2 class="text-xl font-bold italic">System Maintenance</h2>
-            <p class="text-blue-100 text-sm opacity-90">Naye specialists ko approve karein aur hospital database manage karein.</p>
-        </div>
-        <div class="absolute right-[-20px] top-[-20px] opacity-10">
-            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-        </div>
-    </div>
-</div>
+{% regroup doctors by specialist.name as specialist_list %}
 
-<div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-
-    {% for doctor in doctors %}
-
-    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200 transition-all duration-300 p-6 group">
-
-        <div class="flex justify-center mb-5 relative">
-            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
-            {% if doctor.image %}
-            <img src="{{ doctor.image.url }}"
-                class="relative w-28 h-28 rounded-full object-cover border-4 border-white shadow-md">
-            {% else %}
-            <div class="relative w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border-4 border-white shadow-sm italic text-xs">
-                No Image
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="text-center">
-            <h2 class="text-xl font-bold text-slate-800 tracking-tight">
-                {{ doctor.name }}
+<div class="space-y-12">
+    {% for specialist_group in specialist_list %}
+    
+    <div class="specialist-section">
+        <div class="flex items-center gap-4 mb-6">
+            <h2 class="text-xl font-bold text-blue-600 bg-blue-50 px-5 py-2 rounded-2xl border border-blue-100 shadow-sm">
+                🩺 {{ specialist_group.grouper }}
             </h2>
-
-            <div class="mt-1">
-                <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    {{ doctor.specialist.name }}
-                </span>
-            </div>
-
-            <div class="mt-4 grid grid-cols-2 gap-2 border-t border-slate-50 pt-4">
-                <div class="text-left">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Experience</p>
-                    <p class="text-sm font-bold text-slate-700">{{ doctor.experience }} Years</p>
-                </div>
-                <div class="text-left border-l pl-3">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Phone</p>
-                    <p class="text-sm font-bold text-slate-700 truncate">{{ doctor.phone }}</p>
-                </div>
-            </div>
+            <div class="flex-grow h-px bg-slate-200"></div>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {{ specialist_group.list|length }} Doctors
+            </span>
         </div>
 
-        <div class="flex justify-center gap-3 mt-6">
-            <a href="#"
-                class="flex-1 text-center bg-slate-50 text-slate-600 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-600 hover:text-white transition-all">
-                Edit
-            </a>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for doctor in specialist_group.list %}
+            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200 transition-all duration-300 p-6 group">
+                
+                <div class="flex justify-center mb-5 relative">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
+                    {% if doctor.image %}
+                        <img src="{{ doctor.image.url }}" class="relative w-28 h-28 rounded-full object-cover border-4 border-white shadow-md">
+                    {% else %}
+                        <div class="relative w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border-4 border-white shadow-sm italic text-[10px]">
+                            No Image
+                        </div>
+                    {% endif %}
+                </div>
 
-            <a href="#"
-                class="flex-1 text-center bg-slate-50 text-red-500 py-2.5 rounded-xl text-sm font-bold hover:bg-red-500 hover:text-white transition-all">
-                Delete
-            </a>
+                <div class="text-center">
+                    <h2 class="text-lg font-bold text-slate-800 tracking-tight leading-tight">
+                        {{ doctor.name }}
+                    </h2>
+
+                    <div class="mt-4 grid grid-cols-2 gap-2 border-t border-slate-50 pt-4">
+                        <div class="text-left">
+                            <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Experience</p>
+                            <p class="text-xs font-bold text-slate-700">{{ doctor.experience }} Years</p>
+                        </div>
+                        <div class="text-left border-l pl-3">
+                            <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Phone</p>
+                            <p class="text-xs font-bold text-slate-700 truncate">{{ doctor.phone }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-3 mt-6">
+                    <a href="#" class="flex-1 text-center bg-slate-50 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">
+                        Edit
+                    </a>
+                    <a href="#" class="flex-1 text-center bg-slate-50 text-red-500 py-2 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all">
+                        Delete
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-
     </div>
 
     {% empty %}
-    <div class="col-span-full py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+    <div class="py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
         <p class="text-slate-400 font-medium">Abhi tak koi doctor add nahi kiya gaya hai.</p>
     </div>
     {% endfor %}
-
 </div>
 
 {% endblock %}

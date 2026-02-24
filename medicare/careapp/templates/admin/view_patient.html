@@ -2,58 +2,110 @@
 
 {% block admin_content %}
 
-<h1 class="text-2xl font-bold mb-6">
-    Manage Patients
-</h1>
+<div class="mb-8">
+    <h1 class="text-3xl font-extrabold text-slate-800">Patient Management</h1>
+    <p class="text-slate-500">Today's Date: <span class="font-bold text-blue-600">{{ today_date }}</span></p>
+</div>
 
-<div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="flex gap-4 mb-8 border-b border-slate-200">
+    <button onclick="switchTab('today')" id="btn-today" class="pb-3 px-4 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition-all">
+        Today's Appointments ({{ today_patients|length }})
+    </button>
+    <button onclick="switchTab('all')" id="btn-all" class="pb-3 px-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-all">
+        All History
+    </button>
+</div>
 
-    {% for patient in patients %}
+<div id="section-today" class="tab-content">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for patient in today_patients %}
+        <div class="bg-white rounded-2xl shadow-sm border-2 border-green-100 p-5 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 bg-green-500 text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold">TODAY</div>
+            
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl font-black mb-3">
+                    {{ patient.name|first|upper }}
+                </div>
+                <h3 class="font-bold text-slate-800">{{ patient.name }}</h3>
+                <p class="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-0.5 rounded-full mt-2">{{ patient.time }}</p>
+                <p class="text-slate-400 text-xs mt-3 italic">Dr. {{ patient.doctor.name }}</p>
+            </div>
 
-    <div class="bg-white rounded-xl shadow hover:shadow-lg transition p-5">
-
-        <!-- Avatar -->
-        <div class="flex justify-center mb-4">
-            <div class="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-600">
-                {{ patient.name|first|upper }}
+            <div class="flex gap-2 mt-5">
+                <a href="#" class="flex-1 text-center bg-blue-600 text-white py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-100">Prescribe</a>
+                <a href="#" class="flex-1 text-center bg-slate-100 text-slate-600 py-2 rounded-xl text-xs font-bold">Details</a>
             </div>
         </div>
-
-        <!-- Patient Info -->
-        <div class="text-center">
-
-            <h2 class="text-lg font-semibold">
-                {{ patient.name }}
-            </h2>
-
-            <p class="text-gray-500 text-sm">
-                {{ patient.email }}
-            </p>
-
-
+        {% empty %}
+        <div class="col-span-full py-10 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <p class="text-slate-400">Aaj koi appointment nahi hai.</p>
         </div>
-
-        <!-- Buttons -->
-        <div class="flex justify-center gap-3 mt-4">
-
-            <a href="#"
-                class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">
-                View
-            </a>
-
-            <a href="#"
-                class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
-                Delete
-            </a>
-
-        </div>
-
+        {% endfor %}
     </div>
-
-    {% empty %}
-    <p>No Patients Found</p>
-    {% endfor %}
-
 </div>
+
+<div id="section-all" class="tab-content hidden">
+    <div class="overflow-x-auto bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b">Date & Slot</th>
+                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b">Patient</th>
+                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b">Doctor</th>
+                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b text-center">Booking Order</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for patient in all_patients %}
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-4">
+                        <div class="text-sm font-bold text-slate-700">{{ patient.date }}</div>
+                        <div class="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded inline-block mt-1">
+                            Slot: {{ patient.time }}
+                        </div>
+                    </td>
+
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800 text-sm">{{ patient.name }}</div>
+                        <div class="text-[10px] text-slate-400 font-medium">{{ patient.phone }}</div>
+                    </td>
+
+                    <td class="p-4 text-sm text-slate-600 font-medium italic">
+                        Dr. {{ patient.doctor.name }}
+                    </td>
+
+                    <td class="p-4 text-center">
+                        <div class="text-[11px] text-slate-500 font-mono">
+                             {% if patient.created_at %}
+                                {{ patient.created_at|date:"d/m/y H:i" }}
+                             {% else %}
+                                #{{ patient.id }} {% endif %}
+                        </div>
+                        <p class="text-[9px] text-slate-300 uppercase font-extrabold tracking-tighter">Reg. Timestamp</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('section-' + tab).classList.remove('hidden');
+        
+        const btnToday = document.getElementById('btn-today');
+        const btnAll = document.getElementById('btn-all');
+        
+        if(tab === 'today') {
+            btnToday.className = "pb-3 px-4 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition-all";
+            btnAll.className = "pb-3 px-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-all";
+        } else {
+            btnAll.className = "pb-3 px-4 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition-all";
+            btnToday.className = "pb-3 px-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-all";
+        }
+    }
+</script>
 
 {% endblock %}
