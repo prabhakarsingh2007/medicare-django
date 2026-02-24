@@ -1,17 +1,26 @@
-from django.shortcuts import render,redirect, get_object_or_404
-from .models import *
-import razorpay
+from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import JsonResponse
-from datetime import date as today_date, datetime
 from django.utils import timezone
 
-client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+from datetime import datetime, timedelta, time
 
+import razorpay
+
+from .models import *
+
+
+# ================= RAZORPAY CLIENT =================
+client = razorpay.Client(
+    auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+)
+
+
+# ================= HOME =================
 def home(request):
     specialists = Specialist.objects.all()
     ambulances = Ambulance.objects.all()
@@ -22,11 +31,11 @@ def home(request):
     })
 
 
+# ================= DOCTOR =================
 @login_required(login_url='login')
 def doctor_dashboard(request):
     doctor = Doctor.objects.filter(user=request.user).first()
-    return render(request, 'doctor/doctor_dashboard.html',{"doctor": doctor})
-
+    return render(request, 'doctor/doctor_dashboard.html', {"doctor": doctor})
 
 
 def doctor_profile(request, slug):
@@ -34,39 +43,23 @@ def doctor_profile(request, slug):
     return render(request, "doctor/doctor_profile.html", {"doctor": doctor})
 
 
-
-
 def specialist_doctors(request, id):
-    specialist = Specialist.objects.get(id=id)
+    specialist = get_object_or_404(Specialist, id=id)
     doctors = Doctor.objects.filter(specialist=specialist)
 
-    return render(
-        request,
-        "doctors.html",
-        {
-            "specialist": specialist,
-            "doctors": doctors
-        }
-    )
+    return render(request, "doctors.html", {
+        "specialist": specialist,
+        "doctors": doctors
+    })
 
-from datetime import datetime
-from django.utils import timezone
-from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from datetime import datetime, timedelta
-from django.utils import timezone
-from datetime import datetime, time
 
+# ================= BOOK APPOINTMENT =================
 @login_required(login_url='login')
 def book_appointment(request, slug):
     doctor = get_object_or_404(Doctor, slug=slug)
 
     if request.method == "POST":
         try:
-            # 1. Data Lena
             full_name = request.POST.get("name")
             email = request.POST.get("email")
             phone = request.POST.get("phone")
@@ -74,51 +67,41 @@ def book_appointment(request, slug):
             time_str = request.POST.get("time")
             message = request.POST.get("message")
 
-            # 2. Basic Validation
             if not all([full_name, email, phone, date_str, time_str]):
                 return JsonResponse({'success': False, 'message': 'Saari fields bharna zaroori hai.'})
 
-            # Time aur Date Parse karein
             selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             selected_time = datetime.strptime(time_str, "%H:%M").time()
-            
-            # --- VALIDATION START ---
-            
-            # A. Current Date aur Time (Local)
+
             now_local = timezone.localtime(timezone.now())
             current_date = now_local.date()
             current_time = now_local.time()
 
-            # B. Working Hours Check (9 AM to 5 PM)
             start_limit = time(9, 0)
-            end_limit = time(17, 0) # 5 PM tak bookings, yani aakhri slot 4:30-5:00
+            end_limit = time(17, 0)
+
             if not (start_limit <= selected_time < end_limit):
-                return JsonResponse({'success': False, 'message': 'Clinic sirf subah 9 AM se sham 5 PM tak khula hai.'})
+                return JsonResponse({'success': False, 'message': 'Clinic 9 AM se 5 PM tak khula hai.'})
 
-            # C. Backdate Check
             if selected_date < current_date:
-                return JsonResponse({'success': False, 'message': 'Aap purani date book nahi kar sakte.'})
+                return JsonResponse({'success': False, 'message': 'Past date allowed nahi hai.'})
 
-            # D. Past Time Check (Agar aaj ki date hai)
-            if selected_date == current_date:
-                if selected_time <= current_time:
-                    return JsonResponse({'success': False, 'message': 'Ye waqt beet chuka hai. Future ka slot choose karein.'})
+            if selected_date == current_date and selected_time <= current_time:
+                return JsonResponse({'success': False, 'message': 'Past time allowed nahi hai.'})
 
-            # E. 30-Minute Slot Validation
             if selected_time.minute not in [0, 30]:
-                return JsonResponse({'success': False, 'message': 'Invalid time format. Sirf 30-minute slots hi available hain.'})
+                return JsonResponse({'success': False, 'message': 'Sirf 30-minute slots allowed hain.'})
 
-            # --- VALIDATION END ---
+            if Appointment.objects.filter(
+                doctor=doctor,
+                date=selected_date,
+                time=selected_time
+            ).exists():
+                return JsonResponse({'success': False, 'message': 'Ye slot already booked hai.'})
 
-            # 4. Duplicate Slot Check
-            if Appointment.objects.filter(doctor=doctor, date=selected_date, time=selected_time).exists():
-                return JsonResponse({'success': False, 'message': 'Ye slot pehle se booked hai. Dusra slot chunein.'})
+            fees = doctor.fees if doctor.fees else 500
+            amount_in_paise = int(fees) * 100
 
-            # 5. Fees Logic
-            raw_fees = doctor.fees if doctor.fees is not None else 500
-            amount_in_paise = int(float(raw_fees) * 100)
-
-            # 6. Create Pending Appointment
             appointment = Appointment.objects.create(
                 user=request.user,
                 doctor=doctor,
@@ -131,109 +114,100 @@ def book_appointment(request, slug):
                 status="Pending"
             )
 
-            # 7. Razorpay Order
-            order_data = {
+            order = client.order.create({
                 "amount": amount_in_paise,
                 "currency": "INR",
                 "payment_capture": 1
-            }
-            razorpay_order = client.order.create(data=order_data)
+            })
 
             return JsonResponse({
                 'success': True,
-                'order_id': razorpay_order['id'],
-                'amount': razorpay_order['amount'],
+                'order_id': order['id'],
+                'amount': order['amount'],
                 'razorpay_key': settings.RAZORPAY_KEY_ID,
                 'appointment_id': appointment.id
             })
 
         except Exception as e:
-            print(f"ERROR: {str(e)}") 
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})
 
     return render(request, "book_appointment.html", {"doctor": doctor})
 
 
+# ================= PAYMENT =================
 @login_required(login_url='login')
 def payment(request, id):
-    doctor = Doctor.objects.get(id=id)
+    doctor = get_object_or_404(Doctor, id=id)
+
     appointment_id = request.GET.get("appointment_id") or request.POST.get("appointment_id")
-    if not appointment_id:
-        # fallback: try to get latest appointment for this doctor and user
-        appointment = Appointment.objects.filter(doctor=doctor).order_by('-created_at').first()
-        appointment_id = appointment.id if appointment else None
+
+    if appointment_id:
+        appointment = get_object_or_404(Appointment, id=appointment_id, user=request.user)
     else:
-        appointment = Appointment.objects.get(id=appointment_id)
+        appointment = Appointment.objects.filter(
+            doctor=doctor,
+            user=request.user
+        ).order_by('-created_at').first()
 
-    # Do NOT update appointment status here; only after payment success
-
-    client = razorpay.Client(
-        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-    )
+    fees = doctor.fees if doctor.fees else 500
 
     order = client.order.create({
-        "amount": int(doctor.fees or 700) * 100,
+        "amount": int(fees) * 100,
         "currency": "INR",
         "payment_capture": 1
     })
 
-    context = {
+    return render(request, "payment.html", {
         "doctor": doctor,
         "order_id": order["id"],
         "amount": order["amount"],
         "razorpay_key": settings.RAZORPAY_KEY_ID,
-        "appointment_id": appointment_id
-    }
+        "appointment_id": appointment.id if appointment else None
+    })
 
-    return render(request, "payment.html", context)
 
+# ================= PAYMENT SUCCESS =================
 @login_required(login_url='login')
 def successfull_payment(request):
-    # Data nikalna (Inke naam JavaScript se match hone chahiye)
     payment_id = request.GET.get("payment_id")
     order_id = request.GET.get("order_id")
     doctor_id = request.GET.get("doctor_id")
     appointment_id = request.GET.get("appointment_id")
-    
-    # 1. Doctor fetch karein
+
     doctor = get_object_or_404(Doctor, id=doctor_id)
 
-    # 2. Appointment dhundna
     appointment = None
     if appointment_id and appointment_id != 'None':
-        try:
-            appointment = Appointment.objects.get(id=appointment_id)
-        except Appointment.DoesNotExist:
-            appointment = None
+        appointment = Appointment.objects.filter(
+            id=appointment_id,
+            user=request.user
+        ).first()
 
-    # Fallback agar appointment_id nahi mila
     if not appointment:
         appointment = Appointment.objects.filter(
-            doctor=doctor, 
+            doctor=doctor,
             user=request.user
         ).order_by('-created_at').first()
 
     if not appointment:
         return render(request, "appointment_success.html", {
             "doctor": doctor,
-            "error": "Appointment details not found."
+            "error": "Appointment not found"
         })
 
-    # 3. Status update aur Payment record banana
     appointment.status = "Confirmed"
     appointment.save()
 
-    # Payment record (Maan lijiye aapka Payment model status=BooleanField hai)
-    payment_amount = doctor.fees if doctor.fees else 500
-    Payment.objects.get_or_create(
-        payment_id=payment_id,
-        defaults={
-            'appointment': appointment,
-            'order_id': order_id,
-            'amount': payment_amount,
-            'status': True
-        }
-    )
+    if payment_id:
+        Payment.objects.get_or_create(
+            payment_id=payment_id,
+            defaults={
+                'appointment': appointment,
+                'order_id': order_id,
+                'amount': doctor.fees if doctor.fees else 500,
+                'status': True
+            }
+        )
 
     return render(request, "appointment_success.html", {
         "doctor": doctor,
@@ -243,24 +217,29 @@ def successfull_payment(request):
         "time": appointment.time
     })
 
+
+# ================= PATIENT =================
 @login_required(login_url='login')
 def patient_dashboard(request):
     return render(request, "patient/patient_dashboard.html")
 
 
-@login_required(login_url='patient_login')
+@login_required(login_url='login')
 def patient_profile(request):
-    user = request.user
-    return render(request, "patient/patient_profile.html", {
-        "user": user
-    })
- 
+    return render(request, "patient/patient_profile.html", {"user": request.user})
+
+
 @login_required(login_url='login')
 def my_appointments(request):
-    appointment = Appointment.objects.filter()
-    return render(request,"patient/my_appointments.html", {'appointments':appointment})
+    appointments = Appointment.objects.filter(
+        user=request.user
+    ).order_by('-date', '-time')
+    return render(request, "patient/my_appointments.html", {
+        "appointments": appointments
+    })
 
 
+# ================= AUTH =================
 def register_view(request):
     if request.method == "POST":
         full_name = request.POST.get('full_name')
@@ -269,26 +248,28 @@ def register_view(request):
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
 
-        # Simple validation
-        if not full_name or not email or not password1 or not password2:
-            messages.error(request, "All fields are required!")
+        if not all([full_name, username, email, password1, password2]):
+            messages.error(request, "All fields required")
             return redirect('register')
 
         if password1 != password2:
-            messages.error(request, "Passwords do not match!")
+            messages.error(request, "Passwords do not match")
             return redirect('register')
 
-        if User.objects.filter(username=email).exists():
-            messages.error(request, "Email is already registered!")
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists")
             return redirect('register')
 
-        # Create user
-        user = User.objects.create_user(username=username, email=email, password=password1, first_name=full_name)
-        user.save()
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password1,
+            first_name=full_name
+        )
 
         Patient.objects.create(user=user, name=full_name, email=email)
 
-        messages.success(request, "Account created successfully! Please login.")
+        messages.success(request, "Account created successfully")
         return redirect('login')
 
     return render(request, 'register.html')
@@ -299,28 +280,20 @@ def login_view(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        # Authenticate user
         user = authenticate(request, username=username, password=password)
 
-        if user is not None:
+        if user:
             login(request, user)
 
-            # ===== ROLE BASED REDIRECT =====
             if user.is_superuser:
-                messages.success(request, "Admin Login Successful")
-                return redirect('/admin/')   # Django admin panel
-
+                return redirect('/admin/')
             elif user.is_staff:
-                messages.success(request, "Doctor Login Successful")
                 return redirect('doctor_dashboard')
-
             else:
-                messages.success(request, "Patient Login Successful")
                 return redirect('home')
 
-        else:
-            messages.error(request, "Invalid Username or Password")
-            return redirect('login')
+        messages.error(request, "Invalid credentials")
+        return redirect('login')
 
     return render(request, "login.html")
 
@@ -328,64 +301,53 @@ def login_view(request):
 @login_required
 def logout_view(request):
     logout(request)
-    messages.success(request, "You have been logged out.")
+    messages.success(request, "Logged out successfully")
     return redirect('home')
 
 
-
-
+# ================= EXTRA =================
 def about(request):
     return render(request, "extra/about.html")
 
 
 def contact(request):
     if request.method == "POST":
-        name = request.POST.get("name")
-        email = request.POST.get("email")
-        phone = request.POST.get("phone")
-        message = request.POST.get("message")
-
-        # Yaha tum database save ya email send kar sakte ho
-        print(name, email, phone, message)
-
-        messages.success(request, "Message Sent Successfully!")
-
+        messages.success(request, "Message sent successfully")
     return render(request, "extra/contact.html")
 
 
-
+# ================= LAB =================
 @login_required(login_url='login')
 def lab_booking(request):
-
     tests = LabTest.objects.all()
 
     if request.method == "POST":
         test_id = request.POST.get("test")
         date = request.POST.get("date")
-        time = request.POST.get("time")
+        time_ = request.POST.get("time")
         address = request.POST.get("address")
 
-        test = LabTest.objects.get(id=test_id)
+        if not all([test_id, date, time_, address]):
+            messages.error(request, "All fields required")
+            return redirect("lab_booking")
+
+        test = get_object_or_404(LabTest, id=test_id)
 
         LabBooking.objects.create(
             patient=request.user,
             test=test,
             date=date,
-            time=time,
+            time=time_,
             address=address
         )
 
-        messages.success(request, "Lab test has been booked successfully!")
-
+        messages.success(request, "Lab test booked successfully")
         return redirect("home")
 
     return render(request, "lab_booking.html", {"tests": tests})
 
 
-
-
-
-
+# ================= AMBULANCE =================
 @login_required(login_url='login')
 def ambulance_booking(request):
     ambulances = Ambulance.objects.filter(status="Available")
@@ -395,41 +357,39 @@ def ambulance_booking(request):
         pickup = request.POST.get("pickup")
         drop = request.POST.get("drop")
         date = request.POST.get("date")
-        time = request.POST.get("time")
+        time_ = request.POST.get("time")
 
-        selected_ambulance = get_object_or_404(Ambulance, id=ambulance_id)
+        ambulance = get_object_or_404(Ambulance, id=ambulance_id)
 
         AmbulanceBooking.objects.create(
             patient=request.user,
-            ambulance=selected_ambulance,
+            ambulance=ambulance,
             pickup_location=pickup,
             drop_location=drop,
             date=date,
-            time=time
+            time=time_
         )
 
-        selected_ambulance.status = "Busy"
-        selected_ambulance.save()
+        ambulance.status = "Busy"
+        ambulance.save()
 
-        # Success Message yahan add karein
-        messages.success(request, f"Ambulance {selected_ambulance.name} has been booked successfully! Driver will contact you shortly.")
-
-        return redirect("home") # Redirecting to home
+        messages.success(request, "Ambulance booked successfully")
+        return redirect("home")
 
     return render(request, "book_ambulance.html", {"ambulances": ambulances})
 
 
+# ================= MEDICINE =================
 @login_required(login_url='login')
 def medicine_order(request):
-
     medicines = Medicine.objects.filter(stock__gt=0)
 
     if request.method == "POST":
         medicine_id = request.POST.get("medicine")
-        quantity = int(request.POST.get("quantity"))
+        quantity = int(request.POST.get("quantity", 1))
         address = request.POST.get("address")
 
-        medicine = Medicine.objects.get(id=medicine_id)
+        medicine = get_object_or_404(Medicine, id=medicine_id)
 
         MedicineOrder.objects.create(
             patient=request.user,
@@ -437,13 +397,8 @@ def medicine_order(request):
             quantity=quantity,
             address=address
         )
-        
-        messages.success(request, "Your medicine has been ordered successfully !")
 
-
+        messages.success(request, "Medicine ordered successfully")
         return redirect("home")
 
-    return render(request, "medicine_order.html", {"medicines": medicines})
-
-
-
+    return render(request, "medicine_order.html", {"medicines": medicines})   
