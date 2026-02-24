@@ -78,6 +78,35 @@ def add_doctor(request):
 
     return render(request, "admin/add_doctor.html", {"specialists": specialists})
 
+def delete_doctor(request, pk):
+    doctor = get_object_or_404(Doctor, pk=pk)
+    doctor.delete()
+    messages.success(request, "Doctor deleted successfully!")
+    return redirect('view_doctor')
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Doctor # Apne model ka sahi naam check karein
+
+def edit_doctor(request, pk):
+    doctor = get_object_or_404(Doctor, pk=pk)
+    
+    if request.method == 'POST':
+        # Data Update Karne Ka Logic
+        doctor.name = request.POST.get('name')
+        doctor.phone = request.POST.get('phone')
+        doctor.experience = request.POST.get('experience')
+        
+        if request.FILES.get('image'):
+            doctor.image = request.FILES.get('image')
+        
+        doctor.save()
+        return redirect('view_doctor') # POST ke baad return hona zaroori hai
+
+    # --- YAHAN DHAYAN DEIN ---
+    # GET request ke liye ye return hona MUST hai. 
+    # Aapka error bata raha hai ki ye line miss ho gayi hai ya galat indented hai.
+    return render(request, 'admin/edit_doctor.html', {'doctor': doctor})
+
 
 # ================= PATIENT =================
 @staff_member_required
@@ -132,6 +161,13 @@ def view_specialist(request):
     return render(request, "admin/view_specialist.html", {
         "specialists": specialists
     })
+
+@staff_member_required
+def delete_specialist(request, pk):
+    specialist = get_object_or_404(Specialist, pk=pk)
+    specialist.delete()
+    messages.success(request, "Specialist deleted successfully!")
+    return redirect('view_specialist')
 
 
 # ================= AMBULANCE =================

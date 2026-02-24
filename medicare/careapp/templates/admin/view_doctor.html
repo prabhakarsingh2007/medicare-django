@@ -59,18 +59,14 @@
                             <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Experience</p>
                             <p class="text-xs font-bold text-slate-700">{{ doctor.experience }} Years</p>
                         </div>
-                        <div class="text-left border-l pl-3">
-                            <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Phone</p>
-                            <p class="text-xs font-bold text-slate-700 truncate">{{ doctor.phone }}</p>
-                        </div>
                     </div>
                 </div>
 
                 <div class="flex justify-center gap-3 mt-6">
-                    <a href="#" class="flex-1 text-center bg-slate-50 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">
+                    <a href="{% url "edit_doctor" pk=doctor.id %}" class="flex-1 text-center bg-slate-50 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">
                         Edit
                     </a>
-                    <a href="#" class="flex-1 text-center bg-slate-50 text-red-500 py-2 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all">
+                    <a href="{% url "delete_doctor" pk=doctor.id %}" class="flex-1 text-center bg-slate-50 text-red-500 py-2 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all">
                         Delete
                     </a>
                 </div>
