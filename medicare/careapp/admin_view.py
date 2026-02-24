@@ -21,18 +21,41 @@ def dashboard(request):
 def view_doctor(request):
      doctors = Doctor.objects.all()
      return render(request, "admin/view_doctor.html",{"doctors": doctors})
+from django.shortcuts import render
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils import timezone
+from .models import Appointment, Patient
 
 @staff_member_required
 def view_patient(request):
-     patients = Patient.objects.all()
-     return render(request, "admin/view_patient.html", {"patients": patients})
+    # Timezone fix for India (Asia/Kolkata)
+    today = timezone.localtime(timezone.now()).date()
+    
+    # Aaj ke patients
+    today_patients = Appointment.objects.filter(date=today).order_by('time')
+    
+    # Saare patients (History)
+    all_patients = Appointment.objects.all().order_by('-date')
+
+    context = {
+        "today_patients": today_patients,
+        "all_patients": all_patients,
+        "today_date": today,
+    }
+
+    # AGAR ERROR AA RAHA HAI: To check karein file ka naam 'view_patient.html' hai ya 'manage_patients.html'
+    # Main yahan 'view_patient.html' use kar raha hoon kyunki aksar yahi default hota hai
+    try:
+        return render(request, "admin/view_patient.html", context)
+    except:
+        return render(request, "admin/manage_patients.html", context)
 
 
 @staff_member_required
 def view_appointment(request):
-     appointments = Appointment.objects.all()
-     return render(request, 'admin/view_appoiment.html', {"appointments": appointments})
-
+    # Saare appointments
+    appointments = Appointment.objects.all().order_by('-date')
+    return render(request, 'admin/view_appoiment.html', {"appointments": appointments})
 
 @staff_member_required
 def add_doctor(request):

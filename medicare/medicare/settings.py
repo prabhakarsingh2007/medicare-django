@@ -125,3 +125,7 @@ STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = 'media'
 
+
+# settings.py
+TIME_ZONE = 'Asia/Kolkata'
+USE_TZ = True

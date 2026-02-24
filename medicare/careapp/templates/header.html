@@ -20,11 +20,17 @@
                     {% if user.is_authenticated %}
                         <div class="h-6 w-px bg-gray-200"></div> <div class="flex items-center gap-4">
                             <div class="text-right hidden lg:block">
-                                <p class="text-sm font-bold text-gray-800">{{ user.username }}</p>
+                                <p class="text-sm font-bold text-gray-800">Hello,{{ user.username }}</p>
                             </div>
+                            {% if user.is_staff %}
                             <a href="" class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
                                 {{ user.username|slice:":1"|upper }}
                             </a>
+                            {% else %}
+                            <a href="{% url "patient_dashboard" %}" class="bg-green-50 text-green-600 px-5 py-2 rounded-xl text-sm font-bold hover:bg-green-600 hover:text-white transition-all duration-300">
+                                Profile
+                            </a>
+                            {% endif %}
                             <a href="{% url 'logout' %}" 
                                class="bg-rose-50 text-rose-600 px-5 py-2 rounded-xl text-sm font-bold hover:bg-rose-600 hover:text-white transition-all duration-300">
                                 Logout
