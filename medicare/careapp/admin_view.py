@@ -1,3 +1,4 @@
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
@@ -29,11 +30,28 @@ def dashboard(request):
 
 
 # ================= DOCTOR =================
+from django.shortcuts import render
+from django.contrib.admin.views.decorators import staff_member_required
+from .models import Doctor # Ensure aapka model name yahi ho
+
 @staff_member_required
 def view_doctor(request):
+    # 1. Sabse pehle saare doctors lein (ordered by specialist)
     doctors = Doctor.objects.all().order_by('specialist__name', 'name')
-    return render(request, "admin/view_doctor.html", {"doctors": doctors})
 
+    # 2. Search Logic: URL se 'search' parameter ko uthana
+    search_query = request.GET.get('search', '')
+    
+    if search_query:
+        # Agar search box mein kuch likha hai, toh filter apply karein
+        doctors = doctors.filter(name__icontains=search_query)
+
+    # 3. Data ko template par bhejna
+    context = {
+        "doctors": doctors,
+        "search_query": search_query,
+    }
+    return render(request, "admin/view_doctor.html", context)
 
 @staff_member_required
 def add_doctor(request):
@@ -129,13 +147,34 @@ def view_patient(request):
 
 
 # ================= APPOINTMENT =================
+from django.db.models import Q
+from django.shortcuts import render
+from django.contrib.admin.views.decorators import staff_member_required
+from .models import Appointment
+
 @staff_member_required
 def view_appointment(request):
+    # Base query
     appointments = Appointment.objects.all().order_by('-date', 'time')
-    return render(request, "admin/view_appoiment.html", {
-        "appointments": appointments
-    })
 
+    # 1. Search Logic (Search by Patient or Doctor Name)
+    search_query = request.GET.get('search', '')
+    if search_query:
+        appointments = appointments.filter(
+            Q(name__icontains=search_query) | 
+            Q(doctor__name__icontains=search_query)
+        )
+
+    # 2. Date Filter Logic
+    date_filter = request.GET.get('date_filter', '')
+    if date_filter:
+        appointments = appointments.filter(date=date_filter)
+
+    return render(request, "admin/view_appoiment.html", {
+        "appointments": appointments,
+        "search_query": search_query,
+        "date_filter": date_filter
+    })
 
 # ================= SPECIALIST =================
 @staff_member_required

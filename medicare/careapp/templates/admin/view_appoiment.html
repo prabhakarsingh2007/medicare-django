@@ -2,41 +2,69 @@
 
 {% block admin_content %}
 
-<h1 class="text-2xl font-bold mb-8">Manage Appointments (Date-wise View)</h1>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Manage Appointments</h1>
+    
+    <form method="GET" action="{% url 'view_appointment' %}" class="flex flex-wrap items-center gap-3">
+        <input type="date" name="date_filter" value="{{ date_filter }}"
+               class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
+        
+        <div class="relative">
+            <input type="text" name="search" placeholder="Patient or Doctor name..." value="{{ search_query }}"
+                   class="pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64 shadow-sm bg-white">
+            <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"/>
+            </svg>
+        </div>
+
+        <button type="submit" class="bg-slate-900 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-blue-600 transition shadow-lg shadow-blue-100">
+            Apply
+        </button>
+        
+        {% if search_query or date_filter %}
+            <a href="{% url 'view_appointment' %}" class="text-xs text-rose-500 font-bold hover:underline">Clear</a>
+        {% endif %}
+    </form>
+</div>
 
 {% regroup appointments by date as appointments_by_date %}
 
-<div class="space-y-10">
+<div class="space-y-12">
     {% for group in appointments_by_date %}
         <div class="date-section">
-            <div class="flex items-center gap-4 mb-4">
-                <h2 class="text-xl font-bold text-blue-700 bg-blue-50 px-4 py-1 rounded-full border border-blue-200">
-                    📅 {{ group.grouper }} 
+            <div class="flex items-center gap-4 mb-6">
+                <h2 class="text-sm font-black text-blue-700 bg-blue-50 px-5 py-2 rounded-2xl border border-blue-100 flex items-center gap-2">
+                    <span class="text-lg">📅</span> {{ group.grouper }} 
                 </h2>
-                <div class="flex-grow h-px bg-gray-200"></div>
-                <span class="text-sm text-gray-500">{{ group.list|length }} Appointments</span>
+                <div class="flex-grow h-px bg-slate-200"></div>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ group.list|length }} Appointments</span>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for appointment in group.list %}
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-lg font-semibold text-gray-800">{{ appointment.name }}</h3>
-                        <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600 uppercase tracking-wider">
-                            {{ appointment.time }}
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-black text-slate-800 group-hover:text-blue-600 transition-colors">{{ appointment.name }}</h3>
+                            <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tight">Dr. {{ appointment.doctor.name }}</p>
+                        </div>
+                        <span class="text-[10px] font-black px-3 py-1.5 bg-slate-50 rounded-xl text-slate-500 border border-slate-100 uppercase tracking-tighter">
+                            🕒 {{ appointment.time }}
                         </span>
                     </div>
 
-                    <p class="text-gray-500 text-sm mb-3">
-                        <span class="font-medium">Doctor:</span> {{ appointment.doctor.name }}
-                    </p>
-
-                    <div class="space-y-1 text-sm border-t pt-3">
-                        <p><span class="text-gray-400">Email:</span> {{ appointment.email }}</p>
-                        <p><span class="text-gray-400">Phone:</span> {{ appointment.phone }}</p>
+                    <div class="space-y-3 pt-4 border-t border-slate-50">
+                        <div class="flex items-center gap-3 text-slate-500">
+                            <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-width="2"/></svg>
+                            <span class="text-sm font-medium truncate">{{ appointment.email }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-slate-500">
+                            <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-width="2"/></svg>
+                            <span class="text-sm font-medium">{{ appointment.phone }}</span>
+                        </div>
                         
                         {% if appointment.message %}
-                        <div class="mt-2 p-2 bg-yellow-50 rounded text-xs text-gray-700 italic">
+                        <div class="mt-4 p-4 bg-slate-50 rounded-2xl text-[11px] text-slate-500 italic border border-slate-100">
                             "{{ appointment.message }}"
                         </div>
                         {% endif %}
@@ -46,8 +74,11 @@
             </div>
         </div>
     {% empty %}
-        <div class="text-center py-20 bg-gray-50 rounded-xl border-2 border-dashed">
-            <p class="text-gray-400 text-lg">No appointments scheduled yet.</p>
+        <div class="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-200">
+            <div class="text-5xl mb-4">🔎</div>
+            <h3 class="text-xl font-black text-slate-800">No Appointments Found</h3>
+            <p class="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">Try changing your filters or search terms.</p>
+            <a href="{% url 'view_appointment' %}" class="mt-6 inline-block bg-slate-100 text-slate-600 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Refresh List</a>
         </div>
     {% endfor %}
 </div>
