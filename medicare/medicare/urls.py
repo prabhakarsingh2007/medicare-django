@@ -19,6 +19,7 @@ urlpatterns = [
     path("payment/<int:id>/", payment, name="payment"),
     path("successfull/",successfull_payment,name="successful_payment"),
     path("doctor_dashboard/", doctor_dashboard, name="doctor_dashboard"),
+    path("doctor_profile/<slug:slug>/", doctor_profile, name="doctor_profile"),
     path("patient_dashboard/", patient_dashboard, name="patient_dashboard"),
     path("patient_profile/", patient_profile, name="patient_profile"),
     path("patient/my_appointments", my_appointments, name="my_appointments"),

@@ -29,6 +29,13 @@ def doctor_dashboard(request):
 
 
 
+def doctor_profile(request, slug):
+    doctor = get_object_or_404(Doctor, slug=slug)
+    return render(request, "doctor/doctor_profile.html", {"doctor": doctor})
+
+
+
+
 def specialist_doctors(request, id):
     specialist = Specialist.objects.get(id=id)
     doctors = Doctor.objects.filter(specialist=specialist)

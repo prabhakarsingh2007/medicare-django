@@ -74,7 +74,6 @@ def add_doctor(request):
         qualification = request.POST.get("qualification")
         specialist_id = request.POST.get("specialist")
         experience = request.POST.get("experience")
-        phone = request.POST.get("phone")
         username = request.POST.get("username")
         password = request.POST.get("password")
 
