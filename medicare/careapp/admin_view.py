@@ -36,14 +36,12 @@ from .models import Doctor # Ensure aapka model name yahi ho
 
 @staff_member_required
 def view_doctor(request):
-    # 1. Sabse pehle saare doctors lein (ordered by specialist)
+    
     doctors = Doctor.objects.all().order_by('specialist__name', 'name')
-
-    # 2. Search Logic: URL se 'search' parameter ko uthana
     search_query = request.GET.get('search', '')
     
     if search_query:
-        # Agar search box mein kuch likha hai, toh filter apply karein
+        
         doctors = doctors.filter(name__icontains=search_query)
 
     # 3. Data ko template par bhejna
@@ -52,6 +50,7 @@ def view_doctor(request):
         "search_query": search_query,
     }
     return render(request, "admin/view_doctor.html", context)
+from django.utils.text import slugify
 
 @staff_member_required
 def add_doctor(request):
@@ -59,7 +58,6 @@ def add_doctor(request):
 
     if request.method == "POST":
         name = request.POST.get("name")
-        slug = request.POST.get("slug")
         photo = request.FILES.get("photo")
         qualification = request.POST.get("qualification")
         specialist_id = request.POST.get("specialist")
@@ -80,6 +78,9 @@ def add_doctor(request):
         )
         user.is_staff = True
         user.save()
+
+        # 👇 AUTO SLUG (user se nahi le rahe)
+        slug = slugify(name)
 
         Doctor.objects.create(
             name=name,

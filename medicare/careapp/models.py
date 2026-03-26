@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.utils.text import slugify
 
 # Create your models here.
 
@@ -32,6 +33,18 @@ class Doctor(models.Model):
     about = models.TextField(null=True, blank=True)
     image = models.ImageField(upload_to="doctors/")
     slug = models.SlugField(unique=True,null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        base_slug = slugify(self.name) if self.name else "doctor"
+        slug_candidate = base_slug
+        count = 1
+
+        while Doctor.objects.filter(slug=slug_candidate).exclude(pk=self.pk).exists():
+            slug_candidate = f"{base_slug}-{count}"
+            count += 1
+
+        self.slug = slug_candidate
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
