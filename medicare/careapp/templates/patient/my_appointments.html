@@ -71,12 +71,12 @@
                         Download Slip
                     </button>
                     
-                    <div class="flex items-center gap-4">
+                    <a href="{% url 'edit_appointment' id=item.id %}" class="flex items-center gap-4">
+                        <button class="text-xs font-bold text-gray-400 hover:text-red-500 transition">Edit Appointment</button>
+                    </a>
+                    <a href="{% url 'cancel_appointment' id=item.id %}" class="flex items-center gap-4">
                         <button class="text-xs font-bold text-gray-400 hover:text-red-500 transition">Cancel Appointment</button>
-                        <a href="#" class="bg-gray-800 text-white px-4 py-2 rounded text-xs font-bold hover:bg-gray-900 transition">
-                            View Details
-                        </a>
-                    </div>
+                    </a>
                 </div>
             </div>
 

@@ -158,6 +158,15 @@ def view_appointment(request):
     # Base query
     appointments = Appointment.objects.all().order_by('-date', 'time')
 
+    # 0. Status Filter Logic
+    status_filter = request.GET.get('status_filter', 'active')
+    if status_filter == 'cancelled':
+        appointments = appointments.filter(status='Cancelled')
+    elif status_filter == 'all':
+        pass
+    else:
+        appointments = appointments.exclude(status='Cancelled')
+
     # 1. Search Logic (Search by Patient or Doctor Name)
     search_query = request.GET.get('search', '')
     if search_query:
@@ -174,7 +183,8 @@ def view_appointment(request):
     return render(request, "admin/view_appoiment.html", {
         "appointments": appointments,
         "search_query": search_query,
-        "date_filter": date_filter
+        "date_filter": date_filter,
+        "status_filter": status_filter
     })
 
 # ================= SPECIALIST =================

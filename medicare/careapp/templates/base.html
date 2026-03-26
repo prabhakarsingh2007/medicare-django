@@ -9,6 +9,37 @@
 <body class="min-h-screen bg-gray-200">
     
     {% include "header.html" %}
+    {% if messages %}
+    <div class="fixed top-5 right-5 z-50 space-y-3 w-[92%] max-w-sm">
+        {% for message in messages %}
+        <div class="flash-message p-4 rounded-xl border shadow-lg bg-white transition-opacity duration-300
+            {% if message.tags == 'error' %}
+                border-rose-200 text-rose-700
+            {% elif message.tags == 'success' %}
+                border-emerald-200 text-emerald-700
+            {% elif message.tags == 'warning' %}
+                border-amber-200 text-amber-700
+            {% else %}
+                border-blue-200 text-blue-700
+            {% endif %}">
+            <p class="text-xs font-bold uppercase tracking-wider opacity-70 mb-1">{{ message.tags|default:'info' }}</p>
+            <p class="text-sm font-semibold">{{ message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('.flash-message').forEach(function (el) {
+                el.style.opacity = '0';
+                setTimeout(function () {
+                    el.remove();
+                }, 300);
+            });
+        }, 2000);
+    </script>
+
     {% block content %}
 
     <div class="flex flex-1">

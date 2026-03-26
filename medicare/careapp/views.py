@@ -6,6 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.utils import timezone
+from django.db.models import Q
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+import re
 
 from datetime import datetime, timedelta, time
 
@@ -18,6 +22,30 @@ from .models import *
 client = razorpay.Client(
     auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
 )
+
+
+def is_valid_indian_phone(phone):
+    return bool(re.fullmatch(r"\d{10}", phone or ""))
+
+
+def is_valid_email_address(email):
+    try:
+        validate_email(email)
+        return True
+    except ValidationError:
+        return False
+
+
+def is_strong_password(password):
+    if not password or len(password) < 6:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"\d", password):
+        return False
+    if not re.search(r"[^A-Za-z0-9]", password):
+        return False
+    return True
 
 
 # ================= HOME =================
@@ -35,7 +63,38 @@ def home(request):
 @login_required(login_url='login')
 def doctor_dashboard(request):
     doctor = Doctor.objects.filter(user=request.user).first()
-    return render(request, 'doctor/doctor_dashboard.html', {"doctor": doctor})
+    appointments = Appointment.objects.none()
+
+    if doctor:
+        appointments = Appointment.objects.filter(doctor=doctor).order_by('-date', '-time')
+
+    return render(request, 'doctor/doctor_dashboard.html', {
+        "doctor": doctor,
+        "appointments": appointments
+    })
+
+
+@login_required(login_url='login')
+def doctor_update_appointment_status(request, id, status):
+    if request.method != "POST":
+        return redirect("doctor_dashboard")
+
+    doctor = Doctor.objects.filter(user=request.user).first()
+    if not doctor:
+        messages.error(request, "Doctor profile not found.")
+        return redirect("doctor_dashboard")
+
+    allowed_statuses = {"Confirmed", "Cancelled", "Pending"}
+    if status not in allowed_statuses:
+        messages.error(request, "Invalid status.")
+        return redirect("doctor_dashboard")
+
+    appointment = get_object_or_404(Appointment, id=id, doctor=doctor)
+    appointment.status = status
+    appointment.save()
+
+    messages.success(request, f"Appointment marked as {status}.")
+    return redirect("doctor_dashboard")
 
 
 def doctor_profile(request, slug):
@@ -61,14 +120,20 @@ def book_appointment(request, slug):
     if request.method == "POST":
         try:
             full_name = request.POST.get("name")
-            email = request.POST.get("email")
-            phone = request.POST.get("phone")
+            email = (request.POST.get("email") or "").strip()
+            phone = (request.POST.get("phone") or "").strip()
             date_str = request.POST.get("date")
             time_str = request.POST.get("time")
             message = request.POST.get("message")
 
             if not all([full_name, email, phone, date_str, time_str]):
                 return JsonResponse({'success': False, 'message': 'Saari fields bharna zaroori hai.'})
+
+            if not is_valid_email_address(email):
+                return JsonResponse({'success': False, 'message': 'Please enter a valid email address.'})
+
+            if not is_valid_indian_phone(phone):
+                return JsonResponse({'success': False, 'message': 'Phone number must be exactly 10 digits.'})
 
             selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             selected_time = datetime.strptime(time_str, "%H:%M").time()
@@ -96,7 +161,7 @@ def book_appointment(request, slug):
                 doctor=doctor,
                 date=selected_date,
                 time=selected_time
-            ).exists():
+            ).exclude(status="Cancelled").exists():
                 return JsonResponse({'success': False, 'message': 'Ye slot already booked hai.'})
 
             fees = doctor.fees if doctor.fees else 500
@@ -132,6 +197,92 @@ def book_appointment(request, slug):
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})
 
     return render(request, "book_appointment.html", {"doctor": doctor})
+
+def edit_appointment(request, id):
+    appointment = get_object_or_404(Appointment, id=id, user=request.user)
+
+    if request.method == "POST":
+        try:
+            date_str = request.POST.get("date")
+            time_str = request.POST.get("time")
+
+            selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            selected_time = datetime.strptime(time_str, "%H:%M").time()
+
+            now_local = timezone.localtime(timezone.now())
+            current_date = now_local.date()
+            current_time = now_local.time()
+
+            start_limit = time(9, 0)
+            end_limit = time(17, 0)
+
+            if not (start_limit <= selected_time < end_limit):
+                messages.error(request, "Clinic 9 AM se 5 PM tak khula hai.")
+                return redirect('my_appointments')
+
+            if selected_time.minute not in [0, 30]:
+                messages.error(request, "Sirf 30-minute slots allowed hain.")
+                return redirect('my_appointments')
+
+            if selected_date < current_date or (selected_date == current_date and selected_time <= current_time):
+                messages.error(request, "Past date/time allowed nahi hai.")
+                return redirect('my_appointments')
+
+            if Appointment.objects.filter(
+                doctor=appointment.doctor,
+                date=selected_date,
+                time=selected_time
+            ).exclude(id=appointment.id).exclude(status="Cancelled").exists():
+                messages.error(request, "Ye slot already booked hai.")
+                return redirect('my_appointments')
+
+            appointment.date = selected_date
+            appointment.time = selected_time
+            appointment.status = "Pending"
+            appointment.save()
+
+            messages.success(request, "Appointment updated successfully. Payment dobara karna padega.")
+            return redirect('my_appointments')
+
+        except Exception as e:
+            messages.error(request, f"Server Error: {str(e)}")
+            return redirect('my_appointments')
+
+    return render(request, "patient/edit_appointment.html", {"appointment": appointment})
+
+
+@login_required(login_url='login')
+def get_booked_slots(request):
+    doctor_id = request.GET.get("doctor_id")
+    date_str = request.GET.get("date")
+    current_appointment_id = request.GET.get("appointment_id")
+
+    if not doctor_id or not date_str:
+        return JsonResponse({"success": False, "booked_slots": []})
+
+    try:
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return JsonResponse({"success": False, "booked_slots": []})
+
+    booked_qs = Appointment.objects.filter(
+        doctor_id=doctor_id,
+        date=selected_date
+    ).exclude(status="Cancelled")
+
+    if current_appointment_id:
+        booked_qs = booked_qs.exclude(id=current_appointment_id)
+
+    booked_slots = [a.time.strftime("%H:%M") for a in booked_qs]
+    return JsonResponse({"success": True, "booked_slots": booked_slots})
+
+
+def cancel_appointment(request, id):
+    appointment = get_object_or_404(Appointment, id=id, user=request.user)
+    appointment.status = "Cancelled"
+    appointment.save()
+    messages.success(request, "Appointment cancelled successfully")
+    return redirect('my_appointments')
 
 
 # ================= PAYMENT =================
@@ -195,7 +346,9 @@ def successfull_payment(request):
             "error": "Appointment not found"
         })
 
-    appointment.status = "Confirmed"
+    # Payment successful hone par appointment pending rahega.
+    # Doctor dashboard se doctor khud Confirm/Complete karega.
+    appointment.status = "Pending"
     appointment.save()
 
     if payment_id:
@@ -244,7 +397,7 @@ def register_view(request):
     if request.method == "POST":
         full_name = request.POST.get('full_name')
         username = request.POST.get('username')
-        email = request.POST.get('email')
+        email = (request.POST.get('email') or '').strip().lower()
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
 
@@ -256,8 +409,20 @@ def register_view(request):
             messages.error(request, "Passwords do not match")
             return redirect('register')
 
+        if not is_strong_password(password1):
+            messages.error(request, "Password must be at least 6 characters and include 1 uppercase letter, 1 number, and 1 special character")
+            return redirect('register')
+
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists")
+            return redirect('register')
+
+        if not is_valid_email_address(email):
+            messages.error(request, "Please enter a valid email address")
+            return redirect('register')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already registered")
             return redirect('register')
 
         user = User.objects.create_user(

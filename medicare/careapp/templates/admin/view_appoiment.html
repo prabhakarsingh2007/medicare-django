@@ -6,6 +6,12 @@
     <h1 class="text-3xl font-black text-slate-800 tracking-tight">Manage Appointments</h1>
     
     <form method="GET" action="{% url 'view_appointment' %}" class="flex flex-wrap items-center gap-3">
+        <select name="status_filter" class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
+            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled Only</option>
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Appointments</option>
+        </select>
+
         <input type="date" name="date_filter" value="{{ date_filter }}"
                class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
         
@@ -21,7 +27,7 @@
             Apply
         </button>
         
-        {% if search_query or date_filter %}
+        {% if search_query or date_filter or status_filter != 'active' %}
             <a href="{% url 'view_appointment' %}" class="text-xs text-rose-500 font-bold hover:underline">Clear</a>
         {% endif %}
     </form>
@@ -48,8 +54,15 @@
                             <h3 class="text-lg font-black text-slate-800 group-hover:text-blue-600 transition-colors">{{ appointment.name }}</h3>
                             <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tight">Dr. {{ appointment.doctor.name }}</p>
                         </div>
-                        <span class="text-[10px] font-black px-3 py-1.5 bg-slate-50 rounded-xl text-slate-500 border border-slate-100 uppercase tracking-tighter">
-                            🕒 {{ appointment.time }}
+                        <span class="text-[10px] font-black px-3 py-1.5 rounded-xl border uppercase tracking-tighter
+                            {% if appointment.status == 'Cancelled' %}
+                                bg-rose-50 text-rose-600 border-rose-100
+                            {% elif appointment.status == 'Confirmed' %}
+                                bg-emerald-50 text-emerald-600 border-emerald-100
+                            {% else %}
+                                bg-slate-50 text-slate-500 border-slate-100
+                            {% endif %}">
+                            {{ appointment.status }} | 🕒 {{ appointment.time }}
                         </span>
                     </div>
 
@@ -68,6 +81,7 @@
                             "{{ appointment.message }}"
                         </div>
                         {% endif %}
+
                     </div>
                 </div>
                 {% endfor %}

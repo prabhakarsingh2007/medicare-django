@@ -11,6 +11,9 @@ urlpatterns = [
     path("", home , name="home"),
     path("specialist_doctors/<int:id>/", specialist_doctors, name="specialist_doctors"),
     path("book_appointment/<slug:slug>/", book_appointment, name='book_appointment'),
+    path("booked_slots/", get_booked_slots, name='booked_slots'),
+    path("edit_appointment/<int:id>/", edit_appointment, name="edit_appointment"),
+    path("cancel_appointment/<int:id>/", cancel_appointment, name="cancel_appointment"),
     # admin routes
     path("admin/", dashboard, name='admin-dashboard'),
     path("admin/view_doctor", view_doctor, name="view_doctor"),
@@ -19,6 +22,7 @@ urlpatterns = [
     path("payment/<int:id>/", payment, name="payment"),
     path("successfull/",successfull_payment,name="successful_payment"),
     path("doctor_dashboard/", doctor_dashboard, name="doctor_dashboard"),
+    path("doctor/appointment/<int:id>/status/<str:status>/", doctor_update_appointment_status, name="doctor_update_appointment_status"),
     path('delete_doctor/<int:pk>/', delete_doctor, name='delete_doctor'),
     path('edit_doctor/<int:pk>/', edit_doctor, name='edit_doctor'),
     path('delete_specialist/<int:pk>/', delete_specialist, name='delete_specialist'),

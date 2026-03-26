@@ -177,33 +177,6 @@
 
         </div>
     </div>
-    {% if messages %}
-    <div class="fixed top-5 right-5 z-50 space-y-4">
-        {% for message in messages %}
-        <div class="flex items-center p-4 mb-4 text-emerald-800 rounded-[1.5rem] bg-emerald-50 border border-emerald-100 shadow-2xl shadow-emerald-200/50 animate-bounce-short">
-            <div class="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center mr-3">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <div class="pr-8">
-                <p class="font-black uppercase text-[10px] tracking-widest opacity-60">Success</p>
-                <p class="font-bold text-sm">{{ message }}</p>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-{% endif %}
-
-<style>
-    @keyframes bounce-short {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    .animate-bounce-short {
-        animation: bounce-short 0.5s ease-out;
-    }
-</style>
 </div>
 
 <style>
