@@ -77,12 +77,16 @@
                         Download Slip
                     </button>
                     
-                    <a href="{% url 'edit_appointment' id=item.id %}" class="flex items-center gap-4">
-                        <button class="text-xs font-bold text-gray-400 hover:text-red-500 transition">Edit Appointment</button>
-                    </a>
-                    <a href="{% url 'cancel_appointment' id=item.id %}" class="flex items-center gap-4">
-                        <button class="text-xs font-bold text-gray-400 hover:text-red-500 transition">Cancel Appointment</button>
-                    </a>
+                    {% if item.status == "Pending" or item.status == "Confirmed" %}
+                        <a href="{% url 'edit_appointment' id=item.id %}" class="text-xs font-bold text-gray-500 hover:text-blue-600 transition">Edit Appointment</a>
+                        <form method="post" action="{% url 'cancel_appointment' id=item.id %}" onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs font-bold text-gray-400 hover:text-red-500 transition">Cancel Appointment</button>
+                        </form>
+                    {% else %}
+                        <span class="text-xs font-bold text-gray-300 cursor-not-allowed">Edit Appointment</span>
+                        <span class="text-xs font-bold text-gray-300 cursor-not-allowed">Cancel Appointment</span>
+                    {% endif %}
                 </div>
             </div>
 

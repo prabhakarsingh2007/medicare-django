@@ -5,10 +5,13 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Q
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
+from django.urls import reverse
 import re
 
 from datetime import datetime, timedelta, time
@@ -16,6 +19,14 @@ from datetime import datetime, timedelta, time
 import razorpay
 
 from .models import *
+from .notifications import (
+    notify_appointment_booked,
+    notify_appointment_confirmed,
+    notify_appointment_cancelled,
+    send_email_notification,
+)
+from .security_utils import is_strong_password, PASSWORD_RULE_TEXT
+from .activity import log_activity
 
 
 # ================= RAZORPAY CLIENT =================
@@ -36,16 +47,26 @@ def is_valid_email_address(email):
         return False
 
 
-def is_strong_password(password):
-    if not password or len(password) < 6:
-        return False
-    if not re.search(r"[A-Z]", password):
-        return False
-    if not re.search(r"\d", password):
-        return False
-    if not re.search(r"[^A-Za-z0-9]", password):
-        return False
-    return True
+def _login_lock_key(request, username):
+    ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR", "unknown")
+    return f"login-lock:{ip}:{(username or '').lower()}"
+
+
+def is_login_locked(request, username):
+    lock_key = _login_lock_key(request, username)
+    attempts = cache.get(lock_key, 0)
+    return attempts >= int(getattr(settings, "LOGIN_MAX_ATTEMPTS", 5))
+
+
+def register_login_failure(request, username):
+    lock_key = _login_lock_key(request, username)
+    attempts = cache.get(lock_key, 0) + 1
+    timeout = int(getattr(settings, "LOGIN_LOCKOUT_SECONDS", 900))
+    cache.set(lock_key, attempts, timeout=timeout)
+
+
+def clear_login_failures(request, username):
+    cache.delete(_login_lock_key(request, username))
 
 
 def get_current_hospital(request):
@@ -122,6 +143,20 @@ def doctor_update_appointment_status(request, id, status):
     appointment = get_object_or_404(Appointment, id=id, doctor=doctor)
     appointment.status = status
     appointment.save()
+
+    if status == "Confirmed":
+        notify_appointment_confirmed(appointment)
+    elif status == "Cancelled":
+        notify_appointment_cancelled(appointment, cancelled_by="doctor")
+
+    log_activity(
+        actor=request.user,
+        action="appointment_status_updated",
+        target_type="appointment",
+        target_id=str(appointment.id),
+        description=f"Doctor updated appointment status to {status}",
+        extra_data={"status": status, "doctor_id": appointment.doctor_id},
+    )
 
     messages.success(request, f"Appointment marked as {status}.")
     return redirect("doctor_dashboard")
@@ -224,19 +259,32 @@ def book_appointment(request, slug):
                 status="Pending"
             )
 
-            order = client.order.create({
-                "amount": amount_in_paise,
-                "currency": "INR",
-                "payment_capture": 1
-            })
+            notify_appointment_booked(appointment)
 
-            return JsonResponse({
-                'success': True,
-                'order_id': order['id'],
-                'amount': order['amount'],
-                'razorpay_key': settings.RAZORPAY_KEY_ID,
-                'appointment_id': appointment.id
-            })
+            try:
+                order = client.order.create({
+                    "amount": amount_in_paise,
+                    "currency": "INR",
+                    "payment_capture": 1
+                })
+
+                return JsonResponse({
+                    'success': True,
+                    'pay_required': True,
+                    'order_id': order['id'],
+                    'amount': order['amount'],
+                    'razorpay_key': settings.RAZORPAY_KEY_ID,
+                    'appointment_id': appointment.id
+                })
+            except Exception:
+                fallback_url = reverse('successful_payment') + f"?doctor_id={doctor.id}&appointment_id={appointment.id}"
+                return JsonResponse({
+                    'success': True,
+                    'pay_required': False,
+                    'appointment_id': appointment.id,
+                    'redirect_url': fallback_url,
+                    'message': 'Appointment booked. Payment gateway unavailable, so appointment is kept pending.'
+                })
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})
@@ -322,10 +370,26 @@ def get_booked_slots(request):
     return JsonResponse({"success": True, "booked_slots": booked_slots})
 
 
+@login_required(login_url='login')
+@require_POST
 def cancel_appointment(request, id):
     appointment = get_object_or_404(Appointment, id=id, user=request.user)
+
+    if appointment.status in ("Cancelled", "Completed"):
+        messages.warning(request, "This appointment cannot be cancelled.")
+        return redirect('my_appointments')
+
     appointment.status = "Cancelled"
-    appointment.save()
+    appointment.save(update_fields=['status'])
+    notify_appointment_cancelled(appointment, cancelled_by="patient")
+    log_activity(
+        actor=request.user,
+        action="appointment_cancelled",
+        target_type="appointment",
+        target_id=str(appointment.id),
+        description="Patient cancelled appointment",
+        extra_data={"doctor_id": appointment.doctor_id},
+    )
     messages.success(request, "Appointment cancelled successfully")
     return redirect('my_appointments')
 
@@ -537,7 +601,7 @@ def register_view(request):
             return redirect('register')
 
         if not is_strong_password(password1):
-            messages.error(request, "Password must be at least 6 characters and include 1 uppercase letter, 1 number, and 1 special character")
+            messages.error(request, PASSWORD_RULE_TEXT)
             return redirect('register')
 
         if User.objects.filter(username=username).exists():
@@ -556,12 +620,25 @@ def register_view(request):
             username=username,
             email=email,
             password=password1,
-            first_name=full_name
+            first_name=full_name,
+            is_active=False,
         )
 
         Patient.objects.create(user=user, name=full_name, email=email, hospital=current_hospital)
 
-        messages.success(request, "Account created successfully")
+        token = EmailVerificationToken.objects.create(user=user)
+        verify_url = request.build_absolute_uri(reverse('verify_email', args=[token.token]))
+
+        subject = "Verify your MediCare account"
+        body = (
+            f"Hello {full_name},\n\n"
+            "Please verify your email to activate your account.\n"
+            f"Verification link: {verify_url}\n\n"
+            "This link expires in 24 hours."
+        )
+        send_email_notification(subject, body, [email])
+
+        messages.success(request, "Account created. Please verify your email before login.")
         return redirect('login')
 
     return render(request, 'register.html')
@@ -579,9 +656,14 @@ def login_view(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
+        if is_login_locked(request, username):
+            messages.error(request, "Too many failed login attempts. Try again after 15 minutes.")
+            return redirect('login')
+
         user = authenticate(request, username=username, password=password)
 
         if user:
+            clear_login_failures(request, username)
             login(request, user)
 
             admin_profile = HospitalAdminProfile.objects.filter(
@@ -598,6 +680,13 @@ def login_view(request):
                 return redirect('doctor_dashboard')
             else:
                 return redirect('home')
+
+        existing_user = User.objects.filter(username=username).first()
+        if existing_user and not existing_user.is_active and existing_user.check_password(password):
+            messages.error(request, "Please verify your email before login.")
+            return redirect('login')
+
+        register_login_failure(request, username)
 
         messages.error(request, "Invalid credentials")
         return redirect('login')
@@ -621,3 +710,23 @@ def contact(request):
     if request.method == "POST":
         messages.success(request, "Message sent successfully")
     return render(request, "extra/contact.html")
+
+
+def verify_email(request, token):
+    token_obj = EmailVerificationToken.objects.filter(token=token, used_at__isnull=True).select_related('user').first()
+
+    if not token_obj:
+        messages.error(request, "Invalid or already used verification link.")
+        return redirect('login')
+
+    if token_obj.expires_at < timezone.now():
+        messages.error(request, "Verification link expired. Please register again.")
+        return redirect('register')
+
+    token_obj.user.is_active = True
+    token_obj.user.save(update_fields=['is_active'])
+    token_obj.used_at = timezone.now()
+    token_obj.save(update_fields=['used_at'])
+
+    messages.success(request, "Email verified successfully. You can now login.")
+    return redirect('login')

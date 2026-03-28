@@ -9,5 +9,7 @@ admin.site.register(Payment)
 admin.site.register(Patient)
 admin.site.register(Hospital)
 admin.site.register(HospitalAdminProfile)
+admin.site.register(EmailVerificationToken)
+admin.site.register(ActivityLog)
                        
 

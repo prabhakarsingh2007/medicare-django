@@ -32,6 +32,7 @@ urlpatterns = [
     path("patient_profile/", patient_profile, name="patient_profile"),
     path("patient/my_appointments", my_appointments, name="my_appointments"),
     path('register/', register_view, name='register'),
+    path('verify-email/<str:token>/', verify_email, name='verify_email'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
    

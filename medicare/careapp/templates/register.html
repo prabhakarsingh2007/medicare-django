@@ -19,7 +19,7 @@
             <form method="POST" action="{% url 'register' %}" class="space-y-5">
                 {% csrf_token %}
                 <p class="text-[11px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                    Password rule: minimum 6 characters, at least 1 uppercase letter, 1 number, and 1 special character.
+                    Password rule: minimum 8 characters, with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
                 </p>
                 
                 <div class="group">
@@ -68,8 +68,8 @@
                         </label>
                         <div class="relative">
                             <input id="password1" type="password" name="password1" placeholder="••••••••" required
-                                   minlength="6" pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}"
-                                   title="Minimum 6 characters, with at least 1 uppercase letter, 1 number, and 1 special character"
+                                minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+                                title="Minimum 8 characters, with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
                                    class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none">
                             <button type="button" onclick="togglePassword('password1', this)" 
                                     class="absolute right-3 inset-y-0 flex items-center text-gray-400 hover:text-blue-600 focus:outline-none transition-colors">
@@ -84,8 +84,8 @@
                         </label>
                         <div class="relative">
                             <input id="password2" type="password" name="password2" placeholder="••••••••" required
-                                   minlength="6" pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}"
-                                   title="Minimum 6 characters, with at least 1 uppercase letter, 1 number, and 1 special character"
+                                minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+                                title="Minimum 8 characters, with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character"
                                    class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none">
                             <button type="button" onclick="togglePassword('password2', this)" 
                                     class="absolute right-3 inset-y-0 flex items-center text-gray-400 hover:text-blue-600 focus:outline-none transition-colors">

@@ -6,10 +6,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.utils import timezone
+from django.db.models import Count, Sum, Q
+from datetime import timedelta, date as date_cls, datetime as dt_cls
+import json
 
 from .models import (
-    Doctor, Patient, Appointment, Specialist, Hospital, HospitalAdminProfile,
+    Doctor, Patient, Appointment, Specialist, Hospital, HospitalAdminProfile, Payment,
 )
+from .security_utils import is_strong_password, PASSWORD_RULE_TEXT
+from .activity import log_activity
 
 
 def is_hospital_admin_or_superuser(user):
@@ -38,6 +43,18 @@ def dashboard(request):
     today = timezone.localtime(timezone.now()).date()
     admin_hospital = get_admin_hospital(request)
 
+    def _normalize_date(value):
+        if isinstance(value, date_cls):
+            return value
+        if isinstance(value, dt_cls):
+            return value.date()
+        if isinstance(value, str):
+            try:
+                return date_cls.fromisoformat(value)
+            except ValueError:
+                return None
+        return None
+
     doctor_qs = Doctor.objects.all()
     patient_qs = Patient.objects.all()
     appointment_qs = Appointment.objects.all()
@@ -46,6 +63,95 @@ def dashboard(request):
         doctor_qs = doctor_qs.filter(hospital=admin_hospital)
         patient_qs = patient_qs.filter(hospital=admin_hospital)
         appointment_qs = appointment_qs.filter(hospital=admin_hospital)
+
+    monthly_map = {}
+    for raw_date in appointment_qs.values_list('date', flat=True):
+        parsed_date = _normalize_date(raw_date)
+        if not parsed_date:
+            continue
+        month_key = parsed_date.replace(day=1)
+        monthly_map[month_key] = monthly_map.get(month_key, 0) + 1
+
+    monthly_labels = [month.strftime('%b %Y') for month in sorted(monthly_map.keys())]
+    monthly_counts = [monthly_map[month] for month in sorted(monthly_map.keys())]
+
+    trend_start = today - timedelta(days=13)
+    daily_map = {}
+    for raw_date in appointment_qs.values_list('date', flat=True):
+        parsed_date = _normalize_date(raw_date)
+        if not parsed_date or parsed_date < trend_start or parsed_date > today:
+            continue
+        daily_map[parsed_date] = daily_map.get(parsed_date, 0) + 1
+    daily_labels = []
+    daily_counts = []
+    for i in range(14):
+        current_day = trend_start + timedelta(days=i)
+        daily_labels.append(current_day.strftime('%d %b'))
+        daily_counts.append(daily_map.get(current_day, 0))
+
+    doctor_patient_summary = (
+        appointment_qs
+        .values('doctor__name')
+        .annotate(patient_count=Count('email', distinct=True))
+        .order_by('-patient_count', 'doctor__name')[:10]
+    )
+    doctor_labels = [item['doctor__name'] for item in doctor_patient_summary]
+    doctor_patient_counts = [item['patient_count'] for item in doctor_patient_summary]
+
+    super_dashboard = None
+    if request.user.is_superuser:
+        hospitals_overview = (
+            Hospital.objects.filter(is_active=True)
+            .annotate(
+                doctor_total=Count('doctors', distinct=True),
+                patient_total=Count('patients', distinct=True),
+                appointment_total=Count('appointments', distinct=True),
+                active_admin_total=Count('admin_profiles', filter=Q(admin_profiles__is_active=True), distinct=True),
+            )
+            .order_by('name')
+        )
+
+        revenue_rows = (
+            Payment.objects.filter(status=True, appointment__hospital__isnull=False)
+            .values('appointment__hospital')
+            .annotate(total_revenue=Sum('amount'))
+        )
+        revenue_map = {item['appointment__hospital']: item['total_revenue'] or 0 for item in revenue_rows}
+
+        overview_rows = []
+        for hospital in hospitals_overview:
+            overview_rows.append({
+                'name': hospital.name,
+                'doctor_total': hospital.doctor_total,
+                'patient_total': hospital.patient_total,
+                'appointment_total': hospital.appointment_total,
+                'active_admin_total': hospital.active_admin_total,
+                'revenue_total': revenue_map.get(hospital.id, 0),
+            })
+
+        total_revenue = sum(row['revenue_total'] for row in overview_rows)
+        total_hospitals = len(overview_rows)
+        total_usage = sum(row['appointment_total'] for row in overview_rows)
+        avg_usage_per_hospital = round((total_usage / total_hospitals), 2) if total_hospitals else 0
+        top_hospital = max(overview_rows, key=lambda row: row['appointment_total']) if overview_rows else None
+
+        last_30_days = timezone.now() - timedelta(days=30)
+        active_users_total = User.objects.filter(is_active=True).count()
+        active_users_30d = User.objects.filter(is_active=True, last_login__gte=last_30_days).count()
+
+        super_dashboard = {
+            'overview_rows': overview_rows,
+            'total_revenue': total_revenue,
+            'total_usage': total_usage,
+            'avg_usage_per_hospital': avg_usage_per_hospital,
+            'top_hospital_name': top_hospital['name'] if top_hospital else '-',
+            'top_hospital_usage': top_hospital['appointment_total'] if top_hospital else 0,
+            'active_users_total': active_users_total,
+            'active_users_30d': active_users_30d,
+            'active_hospital_admins': HospitalAdminProfile.objects.filter(is_active=True, user__is_active=True).count(),
+            'active_doctors': Doctor.objects.filter(user__is_active=True).count(),
+            'active_patients': Patient.objects.filter(user__is_active=True).count(),
+        }
 
     context = {
         "hospital_count": Hospital.objects.count() if request.user.is_superuser else (1 if admin_hospital else 0),
@@ -56,6 +162,13 @@ def dashboard(request):
         "recent_appointments": appointment_qs.order_by('-id')[:5],
         "today_date": today,
         "current_admin_hospital": admin_hospital,
+        "monthly_labels": json.dumps(monthly_labels),
+        "monthly_counts": json.dumps(monthly_counts),
+        "daily_labels": json.dumps(daily_labels),
+        "daily_counts": json.dumps(daily_counts),
+        "doctor_labels": json.dumps(doctor_labels),
+        "doctor_patient_counts": json.dumps(doctor_patient_counts),
+        "super_dashboard": super_dashboard,
     }
     return render(request, "admin/dashboard.html", context)
 
@@ -124,6 +237,10 @@ def add_doctor(request):
             messages.error(request, "Username already exists")
             return redirect("add_doctor")
 
+        if not is_strong_password(password):
+            messages.error(request, PASSWORD_RULE_TEXT)
+            return redirect("add_doctor")
+
         specialist = get_object_or_404(Specialist, id=specialist_id)
         if specialist.hospital_id and specialist.hospital_id != hospital.id:
             messages.error(request, "Selected specialist belongs to another hospital")
@@ -151,6 +268,15 @@ def add_doctor(request):
             experience=experience
         )
 
+        log_activity(
+            actor=request.user,
+            action="doctor_created",
+            target_type="doctor",
+            target_id=username,
+            description=f"Doctor account created for {name}",
+            extra_data={"hospital_id": hospital.id, "specialist_id": specialist.id},
+        )
+
         messages.success(request, "Doctor added successfully!")
         return redirect("view_doctor")
 
@@ -168,7 +294,16 @@ def delete_doctor(request, pk):
     if admin_hospital and doctor.hospital_id != admin_hospital.id:
         messages.error(request, "You can delete only your hospital doctors")
         return redirect('view_doctor')
+    doctor_name = doctor.name
+    doctor_id = doctor.id
     doctor.delete()
+    log_activity(
+        actor=request.user,
+        action="doctor_deleted",
+        target_type="doctor",
+        target_id=str(doctor_id),
+        description=f"Doctor deleted: {doctor_name}",
+    )
     messages.success(request, "Doctor deleted successfully!")
     return redirect('view_doctor')
 
@@ -190,6 +325,14 @@ def edit_doctor(request, pk):
             doctor.image = request.FILES.get('image')
         
         doctor.save()
+        log_activity(
+            actor=request.user,
+            action="doctor_updated",
+            target_type="doctor",
+            target_id=str(doctor.id),
+            description=f"Doctor updated: {doctor.name}",
+            extra_data={"experience": doctor.experience},
+        )
         return redirect('view_doctor') # POST ke baad return hona zaroori hai
 
     # --- YAHAN DHAYAN DEIN ---
@@ -224,7 +367,6 @@ def view_patient(request):
 
 
 # ================= APPOINTMENT =================
-from django.db.models import Q
 
 @hospital_admin_required
 def view_appointment(request):
@@ -290,6 +432,15 @@ def add_specialist(request):
             icon=icon
         )
 
+        log_activity(
+            actor=request.user,
+            action="specialist_created",
+            target_type="specialist",
+            target_id=name,
+            description=f"Specialist created: {name}",
+            extra_data={"hospital_id": hospital.id},
+        )
+
         messages.success(request, "Specialist Added Successfully")
         return redirect("view_specialist")
 
@@ -329,7 +480,16 @@ def delete_specialist(request, pk):
     if admin_hospital and specialist.hospital_id != admin_hospital.id:
         messages.error(request, "You can delete only your hospital specialists")
         return redirect('view_specialist')
+    specialist_name = specialist.name
+    specialist_id = specialist.id
     specialist.delete()
+    log_activity(
+        actor=request.user,
+        action="specialist_deleted",
+        target_type="specialist",
+        target_id=str(specialist_id),
+        description=f"Specialist deleted: {specialist_name}",
+    )
     messages.success(request, "Specialist deleted successfully!")
     return redirect('view_specialist')
 
@@ -364,12 +524,19 @@ def add_hospital(request):
             messages.error(request, "Hospital already exists")
             return redirect("add_hospital")
 
-        Hospital.objects.create(
+        hospital = Hospital.objects.create(
             name=name,
             address=address or None,
             phone=phone or None,
             email=email or None,
             is_active=True,
+        )
+        log_activity(
+            actor=request.user,
+            action="hospital_created",
+            target_type="hospital",
+            target_id=str(hospital.id),
+            description=f"Hospital created: {hospital.name}",
         )
         messages.success(request, "Hospital added successfully")
         return redirect("view_hospital")
@@ -384,7 +551,16 @@ def delete_hospital(request, pk):
         return redirect("admin-dashboard")
 
     hospital = get_object_or_404(Hospital, pk=pk)
+    hospital_name = hospital.name
+    hospital_id = hospital.id
     hospital.delete()
+    log_activity(
+        actor=request.user,
+        action="hospital_deleted",
+        target_type="hospital",
+        target_id=str(hospital_id),
+        description=f"Hospital deleted: {hospital_name}",
+    )
     messages.success(request, "Hospital deleted successfully")
     return redirect('view_hospital')
 
@@ -408,6 +584,10 @@ def add_hospital_admin(request):
             messages.error(request, "All required fields must be filled")
             return redirect("add_hospital_admin")
 
+        if not is_strong_password(password):
+            messages.error(request, PASSWORD_RULE_TEXT)
+            return redirect("add_hospital_admin")
+
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists")
             return redirect("add_hospital_admin")
@@ -428,6 +608,14 @@ def add_hospital_admin(request):
         user.save()
 
         HospitalAdminProfile.objects.create(user=user, hospital=hospital, is_active=True)
+        log_activity(
+            actor=request.user,
+            action="hospital_admin_created",
+            target_type="hospital_admin",
+            target_id=username,
+            description=f"Hospital admin created for {hospital.name}",
+            extra_data={"hospital_id": hospital.id},
+        )
         messages.success(request, "Hospital admin created successfully")
         return redirect("view_hospital_admins")
 
@@ -458,6 +646,14 @@ def toggle_hospital_admin_status(request, pk):
     profile.user.save(update_fields=['is_active'])
 
     status_text = "activated" if profile.is_active else "deactivated"
+    log_activity(
+        actor=request.user,
+        action="hospital_admin_status_changed",
+        target_type="hospital_admin",
+        target_id=str(profile.id),
+        description=f"Hospital admin {status_text}: {profile.user.username}",
+        extra_data={"is_active": profile.is_active, "hospital_id": profile.hospital_id},
+    )
     messages.success(request, f"Hospital admin {status_text} successfully")
     return redirect("view_hospital_admins")
 
@@ -474,8 +670,8 @@ def reset_hospital_admin_password(request, pk):
         new_password = request.POST.get("new_password") or ""
         confirm_password = request.POST.get("confirm_password") or ""
 
-        if len(new_password) < 6:
-            messages.error(request, "Password must be at least 6 characters")
+        if not is_strong_password(new_password):
+            messages.error(request, PASSWORD_RULE_TEXT)
             return redirect("reset_hospital_admin_password", pk=pk)
 
         if new_password != confirm_password:
@@ -484,6 +680,13 @@ def reset_hospital_admin_password(request, pk):
 
         profile.user.set_password(new_password)
         profile.user.save(update_fields=['password'])
+        log_activity(
+            actor=request.user,
+            action="hospital_admin_password_reset",
+            target_type="hospital_admin",
+            target_id=str(profile.id),
+            description=f"Password reset for hospital admin: {profile.user.username}",
+        )
         messages.success(request, "Hospital admin password reset successfully")
         return redirect("view_hospital_admins")
 
@@ -501,8 +704,8 @@ def change_admin_password(request):
             messages.error(request, "Current password is incorrect")
             return redirect("change_admin_password")
 
-        if len(new_password) < 6:
-            messages.error(request, "New password must be at least 6 characters")
+        if not is_strong_password(new_password):
+            messages.error(request, PASSWORD_RULE_TEXT)
             return redirect("change_admin_password")
 
         if new_password != confirm_password:
@@ -512,6 +715,14 @@ def change_admin_password(request):
         request.user.set_password(new_password)
         request.user.save(update_fields=['password'])
         update_session_auth_hash(request, request.user)
+
+        log_activity(
+            actor=request.user,
+            action="admin_password_changed",
+            target_type="user",
+            target_id=str(request.user.id),
+            description="Admin changed own password",
+        )
 
         messages.success(request, "Password changed successfully")
         return redirect("admin-dashboard")

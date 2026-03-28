@@ -22,9 +22,13 @@
                             <div class="text-right hidden lg:block">
                                 <p class="text-sm font-bold text-gray-800">Hello, {{ user.first_name|default:user.username }}</p>
                             </div>
-                            {% if user.is_staff %}
-                            <a href="" class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-                                {{ user.username|slice:":1"|upper }}
+                            {% if user.is_superuser or user.hospital_admin_profile.is_active %}
+                            <a href="{% url "admin-dashboard" %}" class="bg-blue-50 text-blue-600 px-5 py-2 rounded-xl text-sm font-bold hover:bg-blue-600 hover:text-white transition-all duration-300">
+                                Admin Dashboard
+                            </a>
+                            {% elif user.is_staff %}
+                            <a href="{% url "doctor_dashboard" %}" class="bg-indigo-50 text-indigo-600 px-5 py-2 rounded-xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-300">
+                                Doctor Dashboard
                             </a>
                             {% else %}
                             <a href="{% url "patient_dashboard" %}" class="bg-green-50 text-green-600 px-5 py-2 rounded-xl text-sm font-bold hover:bg-green-600 hover:text-white transition-all duration-300">
@@ -72,6 +76,13 @@
                             <p class="text-xs text-gray-500">View Profile</p>
                         </div>
                     </div>
+                    {% if user.is_superuser or user.hospital_admin_profile.is_active %}
+                    <a href="{% url 'admin-dashboard' %}" class="block px-4 py-3 text-blue-700 font-bold hover:bg-blue-50 rounded-xl transition">Admin Dashboard</a>
+                    {% elif user.is_staff %}
+                    <a href="{% url 'doctor_dashboard' %}" class="block px-4 py-3 text-indigo-700 font-bold hover:bg-indigo-50 rounded-xl transition">Doctor Dashboard</a>
+                    {% else %}
+                    <a href="{% url 'patient_dashboard' %}" class="block px-4 py-3 text-emerald-700 font-bold hover:bg-emerald-50 rounded-xl transition">Patient Dashboard</a>
+                    {% endif %}
                     <a href="{% url 'logout' %}" class="block px-4 py-3 text-rose-600 font-bold hover:bg-rose-50 rounded-xl transition">Logout</a>
                 {% else %}
                     <a href="{% url 'login' %}" class="block px-4 py-3 text-gray-700 font-bold hover:bg-blue-50 rounded-xl transition">Sign In</a>

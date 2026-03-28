@@ -131,6 +131,12 @@ document.getElementById("appointmentForm").addEventListener("submit", function(e
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+        if (!data.pay_required) {
+          alert(data.message || "Appointment booked successfully.");
+          window.location.href = data.redirect_url || "{% url 'my_appointments' %}";
+          return;
+        }
+
             // Razorpay Popup kholna
             const options = {
                 "key": data.razorpay_key,

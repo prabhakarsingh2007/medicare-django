@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -129,3 +130,18 @@ MEDIA_ROOT = 'media'
 # settings.py
 TIME_ZONE = 'Asia/Kolkata'
 USE_TZ = True
+
+
+# Notification settings
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@medicare.local')
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+
+NOTIFICATIONS_ENABLE_SMS = os.getenv('NOTIFICATIONS_ENABLE_SMS', 'False').lower() == 'true'
+SMS_GATEWAY_URL = os.getenv('SMS_GATEWAY_URL', '')
+SMS_GATEWAY_API_KEY = os.getenv('SMS_GATEWAY_API_KEY', '')
+SMS_GATEWAY_SENDER_ID = os.getenv('SMS_GATEWAY_SENDER_ID', 'MEDCARE')

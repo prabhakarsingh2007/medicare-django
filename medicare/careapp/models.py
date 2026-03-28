@@ -1,6 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+import uuid
+from datetime import timedelta
+from django.utils import timezone
+
+
+def default_email_token_expiry():
+    return timezone.now() + timedelta(hours=24)
 
 # Create your models here.
 
@@ -141,3 +148,31 @@ class Payment(models.Model):
     amount = models.IntegerField()
 
     status = models.BooleanField(default=False)
+
+
+class EmailVerificationToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_tokens')
+    token = models.CharField(max_length=64, unique=True, default=uuid.uuid4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=default_email_token_expiry)
+    used_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.token}"
+
+
+class ActivityLog(models.Model):
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='activity_logs')
+    actor_role = models.CharField(max_length=30, default='system')
+    action = models.CharField(max_length=100)
+    target_type = models.CharField(max_length=100)
+    target_id = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    extra_data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.actor_role} - {self.action}"
