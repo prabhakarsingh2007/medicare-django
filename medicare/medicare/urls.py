@@ -1,3 +1,4 @@
+
 from django.contrib import admin
 from django.urls import path
 from django.conf import settings
@@ -24,6 +25,7 @@ urlpatterns = [
     path("successfull/",successfull_payment,name="successful_payment"),
     path("doctor_dashboard/", doctor_dashboard, name="doctor_dashboard"),
     path("doctor/appointment/<int:id>/status/<str:status>/", doctor_update_appointment_status, name="doctor_update_appointment_status"),
+    path("doctor/appointment/<int:id>/reschedule/", doctor_reschedule_appointment, name="doctor_reschedule_appointment"),
     path('delete_doctor/<int:pk>/', delete_doctor, name='delete_doctor'),
     path('edit_doctor/<int:pk>/', edit_doctor, name='edit_doctor'),
     path('delete_specialist/<int:pk>/', delete_specialist, name='delete_specialist'),

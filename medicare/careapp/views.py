@@ -1,3 +1,56 @@
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+
+# ...existing imports...
+
+@login_required(login_url='login')
+def doctor_reschedule_appointment(request, id):
+    doctor = Doctor.objects.filter(user=request.user).first()
+    if not doctor:
+        messages.error(request, "Doctor profile not found.")
+        return redirect('doctor_dashboard')
+
+    appointment = get_object_or_404(Appointment, id=id, doctor=doctor)
+
+    if request.method == "POST":
+        date_str = request.POST.get("date")
+        time_str = request.POST.get("time")
+        try:
+            new_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            new_time = datetime.strptime(time_str, "%H:%M").time()
+        except Exception:
+            messages.error(request, "Invalid date or time format.")
+            return redirect('doctor_dashboard')
+
+        now_local = timezone.localtime(timezone.now())
+        if new_date < now_local.date() or (new_date == now_local.date() and new_time <= now_local.time()):
+            messages.error(request, "Cannot reschedule to a past date/time.")
+            return redirect('doctor_dashboard')
+
+        if Appointment.objects.filter(doctor=doctor, date=new_date, time=new_time).exclude(id=appointment.id).exclude(status="Cancelled").exists():
+            messages.error(request, "Selected slot already booked.")
+            return redirect('doctor_dashboard')
+
+        appointment.date = new_date
+        appointment.time = new_time
+        appointment.status = "Pending"
+        appointment.save(update_fields=["date", "time", "status"])
+
+        notify_appointment_booked(appointment)
+        log_activity(
+            actor=request.user,
+            action="appointment_rescheduled",
+            target_type="appointment",
+            target_id=str(appointment.id),
+            description=f"Doctor rescheduled appointment to {new_date} {new_time}",
+            extra_data={"doctor_id": doctor.id, "new_date": str(new_date), "new_time": str(new_time)},
+        )
+        messages.success(request, "Appointment rescheduled successfully.")
+        return redirect('doctor_dashboard')
+
+    # GET: show reschedule form
+    return render(request, "doctor/doctor_reschedule.html", {"appointment": appointment})
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.contrib import messages
