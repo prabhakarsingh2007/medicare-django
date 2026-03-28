@@ -6,11 +6,21 @@
             <h1 class="text-2xl font-bold text-slate-800">Specialties</h1>
             <p class="text-sm text-slate-500">Manage medical departments and categories</p>
         </div>
-        
-        <a href="{% url 'add_specialist' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 w-fit">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2"/></svg>
-            Add New Specialist
-        </a>
+
+        <div class="flex items-center gap-3 flex-wrap">
+            <form method="GET" class="flex items-center gap-2">
+                <select name="hospital" onchange="this.form.submit()" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm">
+                    <option value="">All Hospitals</option>
+                    {% for h in hospitals %}
+                    <option value="{{ h.id }}" {% if selected_hospital == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'add_specialist' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 w-fit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2"/></svg>
+                Add New Specialist
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -27,6 +37,7 @@
 
             <h3 class="font-bold text-slate-800 text-lg">{{ s.name }}</h3>
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Department</p>
+            <p class="text-xs text-blue-600 font-semibold mt-1">{{ s.hospital.name|default:"No Hospital" }}</p>
 
             <div class="mt-6 flex gap-3">
                

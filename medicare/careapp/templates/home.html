@@ -21,7 +21,28 @@
                 class="w-full h-full object-cover opacity-20 lg:opacity-100 mask-linear-gradient" alt="Hospital">
         </div>
     </div>
-    <section class="max-w-7xl mx-auto px-6 -mt-20 relative z-20">
+    <section class="max-w-7xl mx-auto px-6 py-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <h3 class="text-lg font-bold text-slate-800">Select Hospital</h3>
+                <p class="text-sm text-slate-500">
+                    Current:
+                    <span class="font-bold text-blue-600">{{ current_hospital.name|default:"Not selected" }}</span>
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% for hospital in hospitals %}
+                <a href="{% url 'select_hospital' hospital.slug %}"
+                   class="px-4 py-2 rounded-xl border text-sm font-semibold transition {% if current_hospital and current_hospital.id == hospital.id %}bg-blue-600 text-white border-blue-600{% else %}bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100{% endif %}">
+                    {{ hospital.name }}
+                </a>
+                {% empty %}
+                <p class="text-sm text-slate-400">No active hospitals configured yet. Add hospitals from admin.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    <section class="max-w-7xl mx-auto px-6 mt-2 relative z-20">
         <div class="flex items-center justify-between mb-10">
             <h2 class="text-2xl font-bold text-slate-800">Choose a Department</h2>
             <span class="h-[2px] flex-1 bg-slate-200 mx-6 hidden md:block"></span>
@@ -84,99 +105,6 @@
             {% endfor %}
         </div>
     </section>
-    <div class="max-w-7xl mx-auto px-6 py-24">
-        <div class="mb-12">
-            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Our Fast-Track Services</h2>
-            <p class="text-slate-500 font-medium">Zaroorat ke waqt, sabse tez aur bharosemand help.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-            <div
-                class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
-                <div class="relative z-10">
-                    <div
-                        class="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
-                                stroke-width="2" />
-                            <path
-                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1"
-                                stroke-width="2" />
-                        </svg>
-                    </div>
-                    <h4 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Ambulance Booking</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-6">GPS-enabled high-speed ambulances 24/7
-                        available. Life support and ICU facilities onboard.</p>
-                    <a href="{% url 'ambulance_booking' %}"
-                        class="inline-flex items-center text-orange-600 font-black text-xs uppercase tracking-widest hover:gap-2 transition-all">
-                        Book Now <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" />
-                        </svg>
-                    </a>
-                </div>
-                <div
-                    class="absolute -right-6 -bottom-6 w-32 h-32 bg-orange-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700">
-                </div>
-            </div>
-
-            <div
-                class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-200/50 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
-                <div class="relative z-10">
-                    <div
-                        class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                                stroke-width="2" />
-                        </svg>
-                    </div>
-                    <h4 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Pathology Lab</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Home sample collection within 30 mins.
-                        Accurate digital reports delivered straight to your WhatsApp.</p>
-                    <a href="{% url 'lab_booking' %}"
-                        class="inline-flex items-center text-blue-600 font-black text-xs uppercase tracking-widest hover:gap-2 transition-all">
-                        Schedule Test <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" />
-                        </svg>
-                    </a>
-                </div>
-                <div
-                    class="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700">
-                </div>
-            </div>
-
-            <div
-                class="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-200/50 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
-                <div class="relative z-10">
-                    <div
-                        class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                                stroke-width="2" />
-                        </svg>
-                    </div>
-                    <div
-                        class="absolute top-8 right-8 bg-emerald-500 text-white text-[10px] font-black px-2 py-1 rounded-lg animate-bounce">
-                        15 MINS</div>
-                    <h4 class="text-2xl font-black text-slate-800 mb-3 tracking-tight">Medicine Delivery</h4>
-                    <p class="text-slate-500 text-sm leading-relaxed mb-6">Super-fast delivery of genuine medicines.
-                        Upload your prescription and get it at your doorstep.</p>
-                    <a href="{% url 'medicine_order' %} " class=" inline-flex items-center text-emerald-600 font-black
-                        text-xs uppercase tracking-widest hover:gap-2 transition-all">
-                        Order Now <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M17 8l4 4m0 0l-4 4m4-4H3" stroke-width="2.5" />
-                        </svg>
-                    </a>
-                </div>
-                <div
-                    class="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700">
-                </div>
-            </div>
-
-        </div>
-    </div>
 </div>
 
 <style>

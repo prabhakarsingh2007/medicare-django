@@ -4,9 +4,15 @@
 <div class="min-h-screen bg-gray-50 py-10 px-4">
     <div class="max-w-4xl mx-auto">
         
-        <div class="mb-8 border-b pb-4">
-            <h1 class="text-3xl font-bold text-gray-800">My Appointments</h1>
-            <p class="text-gray-500 mt-1">View and manage your scheduled visits.</p>
+        <div class="mb-8 border-b pb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">My Appointments</h1>
+                <p class="text-gray-500 mt-1">View and manage your scheduled visits.</p>
+            </div>
+            <a href="{% url 'patient_dashboard' %}" class="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-50 transition">
+                <span>&larr;</span>
+                Back to Dashboard
+            </a>
         </div>
 
         <div class="space-y-6">
@@ -87,7 +93,10 @@
                 </div>
                 <h3 class="text-xl font-bold text-gray-800">No Appointments</h3>
                 <p class="text-gray-500 mt-2 mb-6">You haven't booked any appointments yet.</p>
-                <a href="/" class="inline-block bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 transition shadow-md">Book Now</a>
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <a href="/" class="inline-block bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 transition shadow-md">Book Now</a>
+                    <a href="{% url 'patient_dashboard' %}" class="inline-block bg-white border border-gray-200 text-gray-700 px-6 py-2 rounded font-bold hover:bg-gray-50 transition">Back to Dashboard</a>
+                </div>
             </div>
             {% endfor %}
         </div>

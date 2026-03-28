@@ -6,6 +6,21 @@
 
     <div class="max-w-6xl mx-auto">
 
+        <div class="bg-white rounded-2xl shadow-md p-5 mb-8 flex items-center gap-4">
+            {% if patient.profile_pic %}
+            <img src="{{ patient.profile_pic.url }}" alt="Profile" class="w-16 h-16 rounded-full object-cover border" />
+            {% else %}
+            <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
+                {{ patient.name|default:user.username|first|upper }}
+            </div>
+            {% endif %}
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">{{ patient.name|default:user.get_full_name|default:user.username }}</h2>
+                <p class="text-sm text-gray-500">{{ patient.email|default:user.email }}</p>
+                <p class="text-xs text-gray-400">Phone: {{ patient.phone|default:"Not added" }}</p>
+            </div>
+        </div>
+
         <!-- Heading -->
         <h1 class="text-2xl sm:text-3xl font-bold mb-8 text-gray-800">
             Welcome Patient 👋

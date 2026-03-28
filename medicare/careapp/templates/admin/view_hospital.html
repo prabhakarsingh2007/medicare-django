@@ -1,0 +1,50 @@
+{% extends "admin/adminbase.html" %}
+
+{% block admin_content %}
+<div>
+    <div class="mb-8 flex items-center justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800">Hospitals</h1>
+            <p class="text-slate-500 text-sm">Manage all hospital branches.</p>
+        </div>
+        <a href="{% url 'add_hospital' %}" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition">Add Hospital</a>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500">Hospital</th>
+                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500">Contact</th>
+                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500">Address</th>
+                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for h in hospitals %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4">
+                            <p class="font-bold text-slate-800">{{ h.name }}</p>
+                            <p class="text-xs text-slate-400">/{{ h.slug }}</p>
+                        </td>
+                        <td class="p-4 text-sm text-slate-600">
+                            <p>{{ h.phone|default:"-" }}</p>
+                            <p>{{ h.email|default:"-" }}</p>
+                        </td>
+                        <td class="p-4 text-sm text-slate-600">{{ h.address|default:"-" }}</td>
+                        <td class="p-4 text-center">
+                            <a href="{% url 'delete_hospital' pk=h.id %}" class="text-red-600 text-sm font-bold hover:text-red-700">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-12 text-center text-slate-400">No hospitals found. Add your first hospital.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

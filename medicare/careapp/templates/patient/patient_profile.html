@@ -1,31 +1,132 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-8 my-20">
-
-    <h2 class="text-2xl font-bold mb-6 text-center">
-        Patient Profile
-    </h2>
-
-    <div class="space-y-4">
-
-        <div class="border p-3 rounded">
-            <label class="font-semibold text-gray-600">Username</label>
-            <p>{{ user.username }}</p>
+<div class="min-h-screen bg-gradient-to-b from-slate-100 via-cyan-50 to-white py-10 px-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center justify-between gap-3 mb-6">
+            <div>
+                <h2 class="text-3xl font-black text-slate-800 tracking-tight">My Patient Profile</h2>
+                <p class="text-sm text-slate-500 mt-1">Save karte hi yahi page par updated details show hongi.</p>
+            </div>
+            <a href="{% url 'patient_dashboard' %}" class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-semibold shadow-sm hover:bg-slate-50 transition">
+                <span>&larr;</span>
+                Back to Dashboard
+            </a>
         </div>
 
-        <div class="border p-3 rounded">
-            <label class="font-semibold text-gray-600">Full Name</label>
-            <p>{{ user.first_name }} {{ user.last_name }}</p>
-        </div>
+        <div class="grid lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-100 p-6 md:p-8">
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
 
-        <div class="border p-3 rounded">
-            <label class="font-semibold text-gray-600">Email</label>
-            <p>{{ user.email }}</p>
-        </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        {% if patient.profile_pic %}
+                        <img src="{{ patient.profile_pic.url }}" alt="Profile" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow" />
+                        {% else %}
+                        <div class="w-20 h-20 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-2xl font-black border-4 border-white shadow">
+                            {{ patient.name|default:user.username|first|upper }}
+                        </div>
+                        {% endif %}
 
+                        <div class="flex-1">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Profile Picture</label>
+                            <input type="file" name="profile_pic" accept="image/*" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                            <p class="text-xs text-slate-400 mt-1">JPG/PNG upload kar sakte ho.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Username</label>
+                            <input type="text" value="{{ user.username }}" disabled class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-100 text-slate-500" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Full Name</label>
+                            <input type="text" name="full_name" value="{{ patient.name|default:user.first_name }}" required class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Email</label>
+                            <input type="email" name="email" value="{{ patient.email|default:user.email }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Phone</label>
+                            <input type="text" name="phone" value="{{ patient.phone|default:'' }}" placeholder="10-15 digits" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Age</label>
+                            <input type="number" name="age" min="1" max="130" value="{{ patient.age|default:'' }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Date of Birth</label>
+                            <input type="date" name="date_of_birth" value="{{ patient.date_of_birth|date:'Y-m-d' }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Gender</label>
+                            <select name="gender" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300">
+                                <option value="">Select gender</option>
+                                <option value="Male" {% if patient.gender == "Male" %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if patient.gender == "Female" %}selected{% endif %}>Female</option>
+                                <option value="Other" {% if patient.gender == "Other" %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-slate-600 mb-1">Address</label>
+                            <textarea name="address" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300">{{ patient.address|default:'' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        <button type="submit" class="bg-cyan-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-cyan-100 hover:bg-cyan-700 transition">
+                            Save & Update Profile
+                        </button>
+                        <a href="{% url 'patient_dashboard' %}" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition">
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-gradient-to-br from-slate-900 to-cyan-900 text-white rounded-2xl shadow-xl p-6 h-fit sticky top-24">
+                <p class="text-xs uppercase tracking-[0.2em] text-cyan-200">Current Saved Profile</p>
+                <div class="mt-4 flex items-center gap-3">
+                    {% if patient.profile_pic %}
+                    <img src="{{ patient.profile_pic.url }}" alt="Profile" class="w-14 h-14 rounded-full object-cover border border-white/30" />
+                    {% else %}
+                    <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center font-black text-xl">
+                        {{ patient.name|default:user.username|first|upper }}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h3 class="text-lg font-bold">{{ patient.name|default:user.get_full_name|default:user.username }}</h3>
+                        <p class="text-cyan-100 text-sm">{{ patient.email|default:user.email }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 space-y-3 text-sm">
+                    <div class="flex justify-between gap-3 border-b border-white/15 pb-2">
+                        <span class="text-cyan-200">Phone</span>
+                        <span class="font-semibold text-right">{{ patient.phone|default:"Not added" }}</span>
+                    </div>
+                    <div class="flex justify-between gap-3 border-b border-white/15 pb-2">
+                        <span class="text-cyan-200">Age</span>
+                        <span class="font-semibold text-right">{{ patient.age|default:"Not added" }}</span>
+                    </div>
+                    <div class="flex justify-between gap-3 border-b border-white/15 pb-2">
+                        <span class="text-cyan-200">DOB</span>
+                        <span class="font-semibold text-right">{{ patient.date_of_birth|date:"d M Y"|default:"Not added" }}</span>
+                    </div>
+                    <div class="flex justify-between gap-3 border-b border-white/15 pb-2">
+                        <span class="text-cyan-200">Gender</span>
+                        <span class="font-semibold text-right">{{ patient.gender|default:"Not added" }}</span>
+                    </div>
+                    <div>
+                        <p class="text-cyan-200 mb-1">Address</p>
+                        <p class="font-semibold leading-relaxed">{{ patient.address|default:"Not added" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
 </div>
 
 {% endblock %}

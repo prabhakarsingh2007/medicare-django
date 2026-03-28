@@ -1,5 +1,5 @@
 {% extends "admin/adminbase.html" %}
-{% block content %}
+{% block admin_content %}
 
 <div class="p-6 bg-slate-50 min-h-screen font-sans flex items-center justify-center">
     <div class="max-w-xl w-full">
@@ -24,6 +24,23 @@
 
             <form method="POST" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
+
+                <div class="group">
+                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Hospital</label>
+                    {% if allow_hospital_select %}
+                        <select name="hospital" required
+                            class="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm font-semibold">
+                            <option value="" disabled selected>Select hospital</option>
+                            {% for h in hospitals %}
+                            <option value="{{ h.id }}">{{ h.name }}</option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        <input type="hidden" name="hospital" value="{{ current_admin_hospital.id }}">
+                        <input type="text" value="{{ current_admin_hospital.name }}" disabled
+                            class="w-full bg-slate-100 border-2 border-slate-200 text-slate-500 rounded-2xl p-4 font-semibold">
+                    {% endif %}
+                </div>
 
                 <div class="group">
                     <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Specialist Category Name</label>

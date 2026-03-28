@@ -10,6 +10,7 @@ urlpatterns = [
     path('superadmin/', admin.site.urls),
     path("", home , name="home"),
     path("specialist_doctors/<int:id>/", specialist_doctors, name="specialist_doctors"),
+    path("select_hospital/<slug:slug>/", select_hospital, name="select_hospital"),
     path("book_appointment/<slug:slug>/", book_appointment, name='book_appointment'),
     path("booked_slots/", get_booked_slots, name='booked_slots'),
     path("edit_appointment/<int:id>/", edit_appointment, name="edit_appointment"),
@@ -38,37 +39,14 @@ urlpatterns = [
     path('admin/add_doctor/',add_doctor, name='add_doctor'),
     path("admin/add_specialist/", add_specialist, name="add_specialist"),
     path("admin/view_specialist/", view_specialist, name="view_specialist"),
-
-    # Ambulance
-    path("admin/ambulance_list/", ambulance_list, name="ambulance_list"),
-    path("ambulance_booking/", ambulance_booking, name="ambulance_booking"),
-    path("admin/add_ambulance/", add_ambulance, name="add_ambulance"),
-    path("admin/ambulance_booked/", all_ambulance_booked, name="all_ambulance_booked"), 
-
-
-# Lab
-    path("admin/add_lab_test/", add_lab_test, name="add_lab_test"),
-    path("admin/lab_test_list/", lab_test_list, name="lab_test_list"),
-    path("lab_booking/", lab_booking, name="lab_booking"),
-    path("admin/lab_booked/", all_lab_booked, name="all_lab_booked"),
-
-# Medicine
-    path("admin/medicine_list/", medicine_list, name="medicine_list"),
-    path("medicine_order/", medicine_order, name="medicine_order"),
-    path("admin/add_medicine/", add_medicine, name="add_medicine"),
-    path("admin/all_medicine_ordered/", all_medicine_ordered, name="all_medicine_ordered"),
-
-
-    
-
-
-    
-
-
-   
-
-
-
+    path("admin/add_hospital/", add_hospital, name="add_hospital"),
+    path("admin/add_hospital_admin/", add_hospital_admin, name="add_hospital_admin"),
+    path("admin/view_hospital_admins/", view_hospital_admins, name="view_hospital_admins"),
+    path("admin/toggle_hospital_admin_status/<int:pk>/", toggle_hospital_admin_status, name="toggle_hospital_admin_status"),
+    path("admin/reset_hospital_admin_password/<int:pk>/", reset_hospital_admin_password, name="reset_hospital_admin_password"),
+    path("admin/change_password/", change_admin_password, name="change_admin_password"),
+    path("admin/view_hospital/", view_hospital, name="view_hospital"),
+    path("delete_hospital/<int:pk>/", delete_hospital, name='delete_hospital'),
 
     #extra
 

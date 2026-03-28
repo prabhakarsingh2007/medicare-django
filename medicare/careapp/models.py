@@ -1,22 +1,68 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
 from django.utils.text import slugify
 
 # Create your models here.
 
 
 class Specialist(models.Model):
+    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, null=True, blank=True, related_name='specialists')
     name = models.CharField(max_length=100)
     icon = models.ImageField(upload_to='specialist/', blank=True, null=True)
 
     def __str__(self):
         return self.name
 
+class Hospital(models.Model):
+    name = models.CharField(max_length=150, unique=True)
+    slug = models.SlugField(unique=True, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        base_slug = slugify(self.name) if self.name else "hospital"
+        slug_candidate = base_slug
+        count = 1
+
+        while Hospital.objects.filter(slug=slug_candidate).exclude(pk=self.pk).exists():
+            slug_candidate = f"{base_slug}-{count}"
+            count += 1
+
+        self.slug = slug_candidate
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class HospitalAdminProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='hospital_admin_profile')
+    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='admin_profiles')
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.hospital.name}"
+
+
 class Patient(models.Model):
+    GENDER_CHOICES = (
+        ("Male", "Male"),
+        ("Female", "Female"),
+        ("Other", "Other"),
+    )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='patients')
     name = models.CharField(max_length=100)
     email = models.EmailField()
+    address = models.TextField(blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    age = models.PositiveIntegerField(blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
+    profile_pic = models.ImageField(upload_to='patients/', blank=True, null=True)
 
     def __str__(self):
         return self.user.username
@@ -24,6 +70,7 @@ class Patient(models.Model):
 
 class Doctor(models.Model):
     name = models.CharField(max_length=100)
+    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='doctors')
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     specialist = models.ForeignKey(Specialist, on_delete=models.CASCADE)
     experience = models.IntegerField()
@@ -49,11 +96,6 @@ class Doctor(models.Model):
     def __str__(self):
         return self.name
 
-
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-
 class Appointment(models.Model):
     STATUS_CHOICES = (
         ("Pending", "Pending"),
@@ -63,6 +105,7 @@ class Appointment(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    hospital = models.ForeignKey('Hospital', on_delete=models.SET_NULL, null=True, blank=True, related_name='appointments')
     doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE, related_name="appointments")
     name = models.CharField("Full Name", max_length=100)
     email = models.EmailField()
@@ -94,87 +137,7 @@ class Payment(models.Model):
 
     def __str__(self):
         return self.payment_id
-    
 
+    amount = models.IntegerField()
 
-
-
-
-
-
-
-class Ambulance(models.Model):
-    name = models.CharField(max_length=100)
-    ambulance_type = models.CharField(max_length=100)
-    driver_name = models.CharField(max_length=100)
-    driver_phone = models.CharField(max_length=15)
-    status = models.CharField(max_length=50, default="Available")
-
-    def __str__(self):
-        return self.name
-
-
-class AmbulanceBooking(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE)
-    ambulance = models.ForeignKey(Ambulance, on_delete=models.CASCADE)
-
-    pickup_location = models.CharField(max_length=200)
-    drop_location = models.CharField(max_length=200)
-
-    date = models.DateField()
-    time = models.TimeField()
-
-    status = models.CharField(max_length=50, default="Pending")
-
-    def __str__(self):
-        return str(self.patient)
-
-
-
-class LabTest(models.Model):
-    test_name = models.CharField(max_length=150)
-    price = models.IntegerField()
-    description = models.TextField()
-
-    def __str__(self):
-        return self.test_name
-
-
-class LabBooking(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE)
-    test = models.ForeignKey(LabTest, on_delete=models.CASCADE)
-
-    date = models.DateField()
-    time = models.TimeField()
-    address = models.CharField(max_length=200)
-
-    status = models.CharField(max_length=50, default="Pending")
-
-    def __str__(self):
-        return str(self.patient)
-
-
-class Medicine(models.Model):
-    name = models.CharField(max_length=150)
-    price = models.IntegerField()
-    stock = models.IntegerField()
-    expiry_date = models.DateField()
-
-    def __str__(self):
-        return self.name
-
-
-class MedicineOrder(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE)
-    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE)
-
-    quantity = models.IntegerField()
-    address = models.CharField(max_length=200)
-
-    order_date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=50, default="Pending")
-
-    def __str__(self):
-        return str(self.patient)
-
-    
+    status = models.BooleanField(default=False)

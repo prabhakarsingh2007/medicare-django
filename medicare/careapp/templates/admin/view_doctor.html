@@ -13,16 +13,25 @@
     </div>
     
     <div class="flex flex-wrap items-center gap-3">
-        <form method="GET" action="{% url 'view_doctor' %}" class="relative">
-            <input type="text" 
-                   name="search" 
-                   placeholder="Type doctor name..." 
-                   value="{{ search_query }}"
-                   class="pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64 shadow-sm bg-white transition-all">
+        <form method="GET" action="{% url 'view_doctor' %}" class="flex items-center gap-2">
+            <div class="relative">
+                <input type="text" 
+                       name="search" 
+                       placeholder="Type doctor name..." 
+                       value="{{ search_query }}"
+                       class="pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-56 shadow-sm bg-white transition-all">
             
-            <svg class="w-4 h-4 absolute left-3 top-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
+                <svg class="w-4 h-4 absolute left-3 top-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+
+            <select name="hospital" class="px-3 py-3 rounded-2xl border border-slate-200 text-sm bg-white" onchange="this.form.submit()">
+                <option value="">All Hospitals</option>
+                {% for h in hospitals %}
+                <option value="{{ h.id }}" {% if selected_hospital == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                {% endfor %}
+            </select>
 
             {% if search_query %}
                 <a href="{% url 'view_doctor' %}" class="absolute right-3 top-3 text-slate-300 hover:text-red-500">
@@ -79,6 +88,7 @@
                     <h2 class="text-lg font-bold text-slate-800 leading-tight">
                         {{ doctor.name }}
                     </h2>
+                    <p class="text-xs text-blue-600 font-bold mt-1">{{ doctor.hospital.name|default:"No Hospital" }}</p>
                     <div class="mt-4 border-t border-slate-50 pt-4">
                         <p class="text-[9px] text-slate-400 uppercase font-black tracking-widest">Experience</p>
                         <p class="text-xs font-bold text-slate-700">{{ doctor.experience }} Years</p>

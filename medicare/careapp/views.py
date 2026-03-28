@@ -48,21 +48,51 @@ def is_strong_password(password):
     return True
 
 
+def get_current_hospital(request):
+    selected_slug = request.GET.get("hospital")
+    hospital_id = request.session.get("hospital_id")
+    hospital = None
+
+    if selected_slug:
+        hospital = Hospital.objects.filter(slug=selected_slug, is_active=True).first()
+    elif hospital_id:
+        hospital = Hospital.objects.filter(id=hospital_id, is_active=True).first()
+
+    if not hospital:
+        hospital = Hospital.objects.filter(is_active=True).order_by("name").first()
+
+    if hospital:
+        request.session["hospital_id"] = hospital.id
+
+    return hospital
+
+
 # ================= HOME =================
 def home(request):
+    current_hospital = get_current_hospital(request)
     specialists = Specialist.objects.all()
-    ambulances = Ambulance.objects.all()
+
+    if current_hospital:
+        specialists = specialists.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+
+    hospitals = Hospital.objects.filter(is_active=True).order_by("name")
 
     return render(request, "home.html", {
         "specialists": specialists,
-        "ambulances": ambulances
+        "hospitals": hospitals,
+        "current_hospital": current_hospital,
     })
 
 
 # ================= DOCTOR =================
 @login_required(login_url='login')
 def doctor_dashboard(request):
+    current_hospital = get_current_hospital(request)
     doctor = Doctor.objects.filter(user=request.user).first()
+    if current_hospital:
+        doctor = Doctor.objects.filter(
+            user=request.user
+        ).filter(Q(hospital=current_hospital) | Q(hospital__isnull=True)).first()
     appointments = Appointment.objects.none()
 
     if doctor:
@@ -98,13 +128,23 @@ def doctor_update_appointment_status(request, id, status):
 
 
 def doctor_profile(request, slug):
-    doctor = get_object_or_404(Doctor, slug=slug)
+    current_hospital = get_current_hospital(request)
+    doctor_qs = Doctor.objects.filter(slug=slug)
+    if current_hospital:
+        doctor_qs = doctor_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+    doctor = get_object_or_404(doctor_qs)
     return render(request, "doctor/doctor_profile.html", {"doctor": doctor})
 
 
 def specialist_doctors(request, id):
-    specialist = get_object_or_404(Specialist, id=id)
+    current_hospital = get_current_hospital(request)
+    specialist_qs = Specialist.objects.filter(id=id)
+    if current_hospital:
+        specialist_qs = specialist_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+    specialist = get_object_or_404(specialist_qs)
     doctors = Doctor.objects.filter(specialist=specialist)
+    if current_hospital:
+        doctors = doctors.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
 
     return render(request, "doctors.html", {
         "specialist": specialist,
@@ -115,7 +155,11 @@ def specialist_doctors(request, id):
 # ================= BOOK APPOINTMENT =================
 @login_required(login_url='login')
 def book_appointment(request, slug):
-    doctor = get_object_or_404(Doctor, slug=slug)
+    current_hospital = get_current_hospital(request)
+    doctor_qs = Doctor.objects.filter(slug=slug)
+    if current_hospital:
+        doctor_qs = doctor_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+    doctor = get_object_or_404(doctor_qs)
 
     if request.method == "POST":
         try:
@@ -169,6 +213,7 @@ def book_appointment(request, slug):
 
             appointment = Appointment.objects.create(
                 user=request.user,
+                hospital=current_hospital or doctor.hospital,
                 doctor=doctor,
                 name=full_name,
                 email=email,
@@ -374,19 +419,100 @@ def successfull_payment(request):
 # ================= PATIENT =================
 @login_required(login_url='login')
 def patient_dashboard(request):
-    return render(request, "patient/patient_dashboard.html")
+    current_hospital = get_current_hospital(request)
+    patient, _ = Patient.objects.get_or_create(
+        user=request.user,
+        defaults={
+            "name": request.user.first_name or request.user.username,
+            "email": request.user.email,
+            "hospital": current_hospital,
+        }
+    )
+    if current_hospital and not patient.hospital:
+        patient.hospital = current_hospital
+        patient.save(update_fields=["hospital"])
+    return render(request, "patient/patient_dashboard.html", {"patient": patient})
 
 
 @login_required(login_url='login')
 def patient_profile(request):
-    return render(request, "patient/patient_profile.html", {"user": request.user})
+    current_hospital = get_current_hospital(request)
+    patient, _ = Patient.objects.get_or_create(
+        user=request.user,
+        defaults={
+            "name": request.user.first_name or request.user.username,
+            "email": request.user.email,
+            "hospital": current_hospital,
+        }
+    )
+
+    if request.method == "POST":
+        full_name = (request.POST.get("full_name") or "").strip()
+        email = (request.POST.get("email") or "").strip().lower()
+        phone = (request.POST.get("phone") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        age = (request.POST.get("age") or "").strip()
+        date_of_birth = request.POST.get("date_of_birth")
+        gender = request.POST.get("gender")
+        profile_pic = request.FILES.get("profile_pic")
+
+        if not full_name:
+            messages.error(request, "Full name is required")
+            return redirect("patient_profile")
+
+        if email and not is_valid_email_address(email):
+            messages.error(request, "Please enter a valid email address")
+            return redirect("patient_profile")
+
+        if phone and not re.fullmatch(r"\d{10,15}", phone):
+            messages.error(request, "Phone number should be 10 to 15 digits")
+            return redirect("patient_profile")
+
+        age_value = None
+        if age:
+            try:
+                age_value = int(age)
+                if age_value <= 0 or age_value > 130:
+                    raise ValueError
+            except ValueError:
+                messages.error(request, "Please enter a valid age")
+                return redirect("patient_profile")
+
+        name_parts = full_name.split(" ", 1)
+        request.user.first_name = name_parts[0]
+        request.user.last_name = name_parts[1] if len(name_parts) > 1 else ""
+        request.user.email = email
+        request.user.save()
+
+        patient.name = full_name
+        patient.email = email
+        patient.hospital = patient.hospital or current_hospital
+        patient.phone = phone or None
+        patient.address = address or None
+        patient.age = age_value
+        patient.date_of_birth = date_of_birth or None
+        patient.gender = gender or None
+        if profile_pic:
+            patient.profile_pic = profile_pic
+        patient.save()
+
+        messages.success(request, "Profile updated successfully")
+        return redirect("patient_profile")
+
+    return render(request, "patient/patient_profile.html", {
+        "user": request.user,
+        "patient": patient,
+    })
 
 
 @login_required(login_url='login')
 def my_appointments(request):
+    current_hospital = get_current_hospital(request)
     appointments = Appointment.objects.filter(
         user=request.user
     ).order_by('-date', '-time')
+    if current_hospital:
+        appointments = appointments.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True)).order_by('-date', '-time')
     return render(request, "patient/my_appointments.html", {
         "appointments": appointments
     })
@@ -394,6 +520,7 @@ def my_appointments(request):
 
 # ================= AUTH =================
 def register_view(request):
+    current_hospital = get_current_hospital(request)
     if request.method == "POST":
         full_name = request.POST.get('full_name')
         username = request.POST.get('username')
@@ -432,12 +559,19 @@ def register_view(request):
             first_name=full_name
         )
 
-        Patient.objects.create(user=user, name=full_name, email=email)
+        Patient.objects.create(user=user, name=full_name, email=email, hospital=current_hospital)
 
         messages.success(request, "Account created successfully")
         return redirect('login')
 
     return render(request, 'register.html')
+
+
+def select_hospital(request, slug):
+    hospital = get_object_or_404(Hospital, slug=slug, is_active=True)
+    request.session["hospital_id"] = hospital.id
+    messages.success(request, f"Hospital switched to {hospital.name}")
+    return redirect("home")
 
 
 def login_view(request):
@@ -450,9 +584,17 @@ def login_view(request):
         if user:
             login(request, user)
 
+            admin_profile = HospitalAdminProfile.objects.filter(
+                user=user,
+                is_active=True,
+            ).select_related('hospital').first()
+
             if user.is_superuser:
-                return redirect('/admin/')
-            elif user.is_staff:
+                return redirect('admin-dashboard')
+            elif admin_profile:
+                request.session["hospital_id"] = admin_profile.hospital_id
+                return redirect('admin-dashboard')
+            elif Doctor.objects.filter(user=user).exists():
                 return redirect('doctor_dashboard')
             else:
                 return redirect('home')
@@ -479,91 +621,3 @@ def contact(request):
     if request.method == "POST":
         messages.success(request, "Message sent successfully")
     return render(request, "extra/contact.html")
-
-
-# ================= LAB =================
-@login_required(login_url='login')
-def lab_booking(request):
-    tests = LabTest.objects.all()
-
-    if request.method == "POST":
-        test_id = request.POST.get("test")
-        date = request.POST.get("date")
-        time_ = request.POST.get("time")
-        address = request.POST.get("address")
-
-        if not all([test_id, date, time_, address]):
-            messages.error(request, "All fields required")
-            return redirect("lab_booking")
-
-        test = get_object_or_404(LabTest, id=test_id)
-
-        LabBooking.objects.create(
-            patient=request.user,
-            test=test,
-            date=date,
-            time=time_,
-            address=address
-        )
-
-        messages.success(request, "Lab test booked successfully")
-        return redirect("home")
-
-    return render(request, "lab_booking.html", {"tests": tests})
-
-
-# ================= AMBULANCE =================
-@login_required(login_url='login')
-def ambulance_booking(request):
-    ambulances = Ambulance.objects.filter(status="Available")
-
-    if request.method == "POST":
-        ambulance_id = request.POST.get("ambulance")
-        pickup = request.POST.get("pickup")
-        drop = request.POST.get("drop")
-        date = request.POST.get("date")
-        time_ = request.POST.get("time")
-
-        ambulance = get_object_or_404(Ambulance, id=ambulance_id)
-
-        AmbulanceBooking.objects.create(
-            patient=request.user,
-            ambulance=ambulance,
-            pickup_location=pickup,
-            drop_location=drop,
-            date=date,
-            time=time_
-        )
-
-        ambulance.status = "Busy"
-        ambulance.save()
-
-        messages.success(request, "Ambulance booked successfully")
-        return redirect("home")
-
-    return render(request, "book_ambulance.html", {"ambulances": ambulances})
-
-
-# ================= MEDICINE =================
-@login_required(login_url='login')
-def medicine_order(request):
-    medicines = Medicine.objects.filter(stock__gt=0)
-
-    if request.method == "POST":
-        medicine_id = request.POST.get("medicine")
-        quantity = int(request.POST.get("quantity", 1))
-        address = request.POST.get("address")
-
-        medicine = get_object_or_404(Medicine, id=medicine_id)
-
-        MedicineOrder.objects.create(
-            patient=request.user,
-            medicine=medicine,
-            quantity=quantity,
-            address=address
-        )
-
-        messages.success(request, "Medicine ordered successfully")
-        return redirect("home")
-
-    return render(request, "medicine_order.html", {"medicines": medicines})   
