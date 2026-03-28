@@ -93,6 +93,15 @@
         </header>
 
         <main class="p-6 lg:p-10">
+            {% if messages %}
+                <div class="mb-6 space-y-3">
+                    {% for message in messages %}
+                        <div class="px-4 py-3 rounded-xl border text-sm font-semibold {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border-emerald-200{% elif message.tags == 'error' %}bg-rose-50 text-rose-700 border-rose-200{% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% block admin_content %}{% endblock %}
         </main>
     </div>

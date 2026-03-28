@@ -7,6 +7,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Sum, Q
+from django.db import IntegrityError
 from datetime import timedelta, date as date_cls, datetime as dt_cls
 import json
 
@@ -216,14 +217,26 @@ def add_doctor(request):
         specialists = specialists.filter(hospital=admin_hospital)
 
     if request.method == "POST":
-        name = request.POST.get("name")
+        name = (request.POST.get("name") or "").strip()
         photo = request.FILES.get("photo")
-        qualification = request.POST.get("qualification")
+        qualification = (request.POST.get("qualification") or "").strip()
         specialist_id = request.POST.get("specialist")
-        experience = request.POST.get("experience")
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        experience = (request.POST.get("experience") or "").strip()
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
         hospital_id = request.POST.get("hospital")
+
+        if not all([name, qualification, specialist_id, experience, username, password]):
+            messages.error(request, "Please fill all required fields")
+            return redirect("add_doctor")
+
+        try:
+            exp_value = int(experience)
+            if exp_value < 0:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "Experience must be a valid non-negative number")
+            return redirect("add_doctor")
 
         if admin_hospital:
             hospital = admin_hospital
@@ -241,32 +254,43 @@ def add_doctor(request):
             messages.error(request, PASSWORD_RULE_TEXT)
             return redirect("add_doctor")
 
-        specialist = get_object_or_404(Specialist, id=specialist_id)
+        specialist = Specialist.objects.filter(id=specialist_id).first()
+        if not specialist:
+            messages.error(request, "Please select a valid specialist")
+            return redirect("add_doctor")
+
         if specialist.hospital_id and specialist.hospital_id != hospital.id:
             messages.error(request, "Selected specialist belongs to another hospital")
             return redirect("add_doctor")
 
-        user = User.objects.create_user(
-            username=username,
-            password=password,
-            first_name=name
-        )
-        user.is_staff = True
-        user.save()
+        try:
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                first_name=name
+            )
+            user.is_staff = True
+            user.save()
 
-        # 👇 AUTO SLUG (user se nahi le rahe)
-        slug = slugify(name)
+            # AUTO SLUG (user se nahi le rahe)
+            slug = slugify(name)
 
-        Doctor.objects.create(
-            name=name,
-            hospital=hospital,
-            user=user,
-            slug=slug,
-            image=photo,
-            qualification=qualification,
-            specialist=specialist,
-            experience=experience
-        )
+            Doctor.objects.create(
+                name=name,
+                hospital=hospital,
+                user=user,
+                slug=slug,
+                image=photo,
+                qualification=qualification,
+                specialist=specialist,
+                experience=exp_value
+            )
+        except IntegrityError:
+            messages.error(request, "Unable to add doctor due to duplicate/conflicting data. Please try different details.")
+            return redirect("add_doctor")
+        except Exception as exc:
+            messages.error(request, f"Unable to add doctor: {exc}")
+            return redirect("add_doctor")
 
         log_activity(
             actor=request.user,

@@ -108,16 +108,16 @@ def home(request):
 # ================= DOCTOR =================
 @login_required(login_url='login')
 def doctor_dashboard(request):
-    current_hospital = get_current_hospital(request)
-    doctor = Doctor.objects.filter(user=request.user).first()
-    if current_hospital:
-        doctor = Doctor.objects.filter(
-            user=request.user
-        ).filter(Q(hospital=current_hospital) | Q(hospital__isnull=True)).first()
-    appointments = Appointment.objects.none()
+    doctor = Doctor.objects.select_related('hospital', 'specialist').filter(user=request.user).first()
+    if not doctor:
+        messages.error(request, "Doctor profile not found.")
+        return redirect('home')
 
-    if doctor:
-        appointments = Appointment.objects.filter(doctor=doctor).order_by('-date', '-time')
+    # Keep session hospital aligned with logged-in doctor to avoid cross-hospital filtering issues.
+    if doctor.hospital_id:
+        request.session["hospital_id"] = doctor.hospital_id
+
+    appointments = Appointment.objects.filter(doctor=doctor).order_by('-date', '-time')
 
     return render(request, 'doctor/doctor_dashboard.html', {
         "doctor": doctor,
@@ -677,6 +677,9 @@ def login_view(request):
                 request.session["hospital_id"] = admin_profile.hospital_id
                 return redirect('admin-dashboard')
             elif Doctor.objects.filter(user=user).exists():
+                doctor_profile = Doctor.objects.filter(user=user).only('hospital_id').first()
+                if doctor_profile and doctor_profile.hospital_id:
+                    request.session["hospital_id"] = doctor_profile.hospital_id
                 return redirect('doctor_dashboard')
             else:
                 return redirect('home')
