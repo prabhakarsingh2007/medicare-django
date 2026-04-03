@@ -636,63 +636,123 @@ def my_appointments(request):
 
 
 # ================= AUTH =================
+import random
+import time
+
 def register_view(request):
-    current_hospital = get_current_hospital(request)
     if request.method == "POST":
-        full_name = request.POST.get('full_name')
-        username = request.POST.get('username')
         email = (request.POST.get('email') or '').strip().lower()
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
-
-        if not all([full_name, username, email, password1, password2]):
-            messages.error(request, "All fields required")
-            return redirect('register')
-
-        if password1 != password2:
-            messages.error(request, "Passwords do not match")
-            return redirect('register')
-
-        if not is_strong_password(password1):
-            messages.error(request, PASSWORD_RULE_TEXT)
-            return redirect('register')
-
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists")
-            return redirect('register')
+        phone = (request.POST.get('phone') or '').strip()
 
         if not is_valid_email_address(email):
             messages.error(request, "Please enter a valid email address")
+            return redirect('register')
+
+        if not phone or not phone.isdigit() or len(phone) < 10:
+            messages.error(request, "Please enter a valid phone number")
             return redirect('register')
 
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email already registered")
             return redirect('register')
 
+        otp = str(random.randint(100000, 999999))
+        request.session['reg_email'] = email
+        request.session['reg_phone'] = phone
+        request.session['reg_otp'] = otp
+        request.session['reg_otp_expiry'] = time.time() + 600  # 10 minutes
+
+        subject = "Your MediCare OTP Code"
+        body = f"Hello,\n\nYour OTP for registration is: {otp}\n\nThis code expires in 10 minutes."
+        send_email_notification(subject, body, [email])
+
+        from .notifications import send_fast2sms_otp
+        send_fast2sms_otp(phone, otp)
+
+        messages.success(request, f"OTP sent to email {email} and mobile {phone}")
+        return redirect('verify_otp')
+
+    return render(request, 'register.html')
+
+
+def verify_otp_view(request):
+    email = request.session.get('reg_email')
+    phone = request.session.get('reg_phone')
+    if not email:
+        messages.error(request, "Session expired. Please start again.")
+        return redirect('register')
+
+    if request.method == "POST":
+        entered_otp = request.POST.get('otp', '').strip()
+        expected_otp = request.session.get('reg_otp')
+        expiry = request.session.get('reg_otp_expiry', 0)
+
+        if time.time() > expiry:
+            messages.error(request, "OTP expired. Please try again.")
+            return redirect('register')
+
+        if entered_otp == expected_otp:
+            request.session['email_verified'] = True
+            messages.success(request, "Email verified! Please complete your account details.")
+            return redirect('complete_registration')
+        else:
+            messages.error(request, "Invalid OTP.")
+            return redirect('verify_otp')
+
+    return render(request, 'verify_otp.html', {'email': email, 'phone': phone})
+
+
+def complete_registration_view(request):
+    if not request.session.get('email_verified'):
+        messages.error(request, "Please verify your email first.")
+        return redirect('register')
+
+    email = request.session.get('reg_email')
+    phone = request.session.get('reg_phone')
+    current_hospital = get_current_hospital(request)
+
+    if request.method == "POST":
+        full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+
+        if not all([full_name, username, password1, password2]):
+            messages.error(request, "All fields required")
+            return redirect('complete_registration')
+
+        if password1 != password2:
+            messages.error(request, "Passwords do not match")
+            return redirect('complete_registration')
+
+        if not is_strong_password(password1):
+            messages.error(request, PASSWORD_RULE_TEXT)
+            return redirect('complete_registration')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists")
+            return redirect('complete_registration')
+
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password1,
             first_name=full_name,
-            is_active=False,
+            is_active=True,
         )
 
-        Patient.objects.create(user=user, name=full_name, email=email, hospital=current_hospital)
+        Patient.objects.create(user=user, name=full_name, email=email, phone=phone, hospital=current_hospital)
 
-        token = EmailVerificationToken.objects.create(user=user)
-        verify_url = request.build_absolute_uri(reverse('verify_email', args=[token.token]))
+        # Clear session
+        for key in ['reg_email', 'reg_phone', 'reg_otp', 'reg_otp_expiry', 'email_verified']:
+            if key in request.session:
+                del request.session[key]
 
-        subject = "Verify your MediCare account"
-        body = (
-            f"Hello {full_name},\n\n"
-            "Please verify your email to activate your account.\n"
-            f"Verification link: {verify_url}\n\n"
-            "This link expires in 24 hours."
-        )
-        send_email_notification(subject, body, [email])
+        messages.success(request, "Account created successfully! Please complete your profile.")
+        login(request, user)
+        return redirect('complete_profile')
 
-        messages.success(request, "Account created. Please verify your email before login.")
-        return redirect('login')
+    return render(request, 'complete_registration.html', {'email': email})
 
     return render(request, 'register.html')
 
@@ -735,7 +795,12 @@ def login_view(request):
                     request.session["hospital_id"] = doctor_profile.hospital_id
                 return redirect('doctor_dashboard')
             else:
-                return redirect('home')
+                # Regular user / Patient
+                patient = Patient.objects.filter(user=user).first()
+                if patient and not (patient.phone and patient.gender and patient.age):
+                    messages.warning(request, "Please complete your profile to continue.")
+                    return redirect('complete_profile')
+                return redirect('patient_dashboard')
 
         existing_user = User.objects.filter(username=username).first()
         if existing_user and not existing_user.is_active and existing_user.check_password(password):
@@ -768,21 +833,79 @@ def contact(request):
     return render(request, "extra/contact.html")
 
 
-def verify_email(request, token):
-    token_obj = EmailVerificationToken.objects.filter(token=token, used_at__isnull=True).select_related('user').first()
 
-    if not token_obj:
-        messages.error(request, "Invalid or already used verification link.")
-        return redirect('login')
 
-    if token_obj.expires_at < timezone.now():
-        messages.error(request, "Verification link expired. Please register again.")
-        return redirect('register')
+@login_required(login_url='login')
+def complete_profile_view(request):
+    patient, _ = Patient.objects.get_or_create(
+        user=request.user,
+        defaults={
+            "name": request.user.first_name or request.user.username,
+            "email": request.user.email,
+        }
+    )
+    
+    if request.method == "POST":
+        phone = (request.POST.get("phone") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        age = (request.POST.get("age") or "").strip()
+        gender = request.POST.get("gender")
+        
+        if not all([phone, address, age, gender]):
+            messages.error(request, "All fields are required to complete profile.")
+            return render(request, "complete_profile.html", {"patient": patient})
+            
+        if phone and not re.fullmatch(r"\d{10,15}", phone):
+            messages.error(request, "Phone number should be 10 to 15 digits.")
+            return render(request, "complete_profile.html", {"patient": patient})
+            
+        try:
+            age_value = int(age)
+            if age_value <= 0 or age_value > 130:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "Please enter a valid age.")
+            return render(request, "complete_profile.html", {"patient": patient})
+            
+        patient.phone = phone
+        patient.address = address
+        patient.age = age_value
+        patient.gender = gender
+        patient.save()
+        
+        messages.success(request, "Profile complete. Welcome to your dashboard!")
+        return redirect('patient_dashboard')
+        
+    return render(request, "complete_profile.html", {"patient": patient})
 
-    token_obj.user.is_active = True
-    token_obj.user.save(update_fields=['is_active'])
-    token_obj.used_at = timezone.now()
-    token_obj.save(update_fields=['used_at'])
 
-    messages.success(request, "Email verified successfully. You can now login.")
-    return redirect('login')
+from django.http import HttpResponse
+from django.core.mail import send_mail, EmailMessage
+
+def send_email_view(request):
+    try:
+        send_mail(
+            'Hello User',
+            'Welcome to my Django app',
+            settings.DEFAULT_FROM_EMAIL,
+            ['user@gmail.com'],
+            fail_silently=False,
+        )
+        return HttpResponse("Email Sent ✅")
+    except Exception as e:
+        return HttpResponse(f"Error sending email: {str(e)}", status=500)
+
+
+def send_html_email_view(request):
+    try:
+        email = EmailMessage(
+            'Subject',
+            '<h1>Hello</h1><p>This is HTML email</p>',
+            settings.DEFAULT_FROM_EMAIL,
+            ['user@gmail.com'],
+        )
+        email.content_subtype = 'html'
+        email.send(fail_silently=False)
+        return HttpResponse("HTML Email Sent ✅")
+    except Exception as e:
+        return HttpResponse(f"Error sending HTML email: {str(e)}", status=500)

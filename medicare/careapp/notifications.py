@@ -17,7 +17,7 @@ def send_email_notification(subject, message, recipient_list):
             message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=recipients,
-            fail_silently=True,
+            fail_silently=False,
         )
         return True
     except Exception as exc:
@@ -50,6 +50,26 @@ def send_sms_notification(phone, message):
         return response.status_code in (200, 201, 202)
     except Exception as exc:
         logger.warning("SMS notification failed: %s", exc)
+        return False
+
+def send_fast2sms_otp(phone, otp):
+    api_key = getattr(settings, 'FAST2SMS_API_KEY', '')
+    if not api_key:
+        print(f"FAST2SMS_API_KEY not found. Fake sending OTP {otp} to {phone}")
+        return False
+        
+    url = "https://www.fast2sms.com/dev/bulkV2"
+    payload = f"variables_values={otp}&route=otp&numbers={phone}"
+    headers = {
+        'authorization': api_key,
+        'Content-Type': "application/x-www-form-urlencoded",
+        'Cache-Control': "no-cache",
+    }
+    try:
+        response = requests.post(url, data=payload, headers=headers)
+        return response.ok
+    except Exception as e:
+        logger.warning("Fast2SMS notification failed: %s", e)
         return False
 
 
@@ -94,3 +114,12 @@ def notify_appointment_cancelled(appointment, cancelled_by="system"):
     sms_text = f"MediCare: Your appointment on {appointment.date} {appointment.time} is cancelled."
     send_email_notification(subject, body, [appointment.email, appointment.user.email if appointment.user else None])
     send_sms_notification(appointment.phone, sms_text)
+
+def send_test_email():
+    send_mail(
+        'Test Subject',
+        'Ye ek test email hai',
+        settings.DEFAULT_FROM_EMAIL,
+        ['receiver@gmail.com'],
+        fail_silently=False,
+    )

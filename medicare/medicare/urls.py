@@ -34,7 +34,9 @@ urlpatterns = [
     path("patient_profile/", patient_profile, name="patient_profile"),
     path("patient/my_appointments", my_appointments, name="my_appointments"),
     path('register/', register_view, name='register'),
-    path('verify-email/<str:token>/', verify_email, name='verify_email'),
+    path('verify-otp/', verify_otp_view, name='verify_otp'),
+    path('complete-registration/', complete_registration_view, name='complete_registration'),
+    path('complete-profile/', complete_profile_view, name='complete_profile'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
    
@@ -57,10 +59,7 @@ urlpatterns = [
     
     path("about/", about, name="about"),
     path("contact/", contact, name="contact"),
-
-
-
-    
-
+    path("test-email/", send_email_view, name="test_email"),
+    path("test-html-email/", send_html_email_view, name="test_html_email"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
