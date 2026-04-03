@@ -83,7 +83,13 @@ def notify_appointment_booked(appointment):
         "Thank you."
     )
 
+    sms_text = (
+        f"MediCare: Appointment booked with Dr. {appointment.doctor.name} on "
+        f"{appointment.date} {appointment.time}. Status: {appointment.status}."
+    )
+
     send_email_notification(subject, body, [appointment.email, appointment.user.email if appointment.user else None])
+    send_sms_notification(appointment.phone, sms_text)
 
 
 

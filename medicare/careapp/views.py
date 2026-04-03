@@ -57,7 +57,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Q
@@ -66,8 +66,12 @@ from django.core.exceptions import ValidationError
 from django.core.cache import cache
 from django.urls import reverse
 import re
+from io import BytesIO
 
 from datetime import datetime, timedelta, time
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
 
 import razorpay
 
@@ -635,9 +639,209 @@ def my_appointments(request):
     })
 
 
+@login_required(login_url='login')
+def download_appointment_slip(request, id):
+    appointment = get_object_or_404(Appointment.objects.select_related("doctor", "hospital"), id=id, user=request.user)
+    payment = Payment.objects.filter(appointment=appointment, status=True).order_by("-created_at").first()
+    amount = payment.amount if payment else (appointment.doctor.fees or 500)
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Background card
+    pdf.setFillColor(colors.HexColor("#f3f7fc"))
+    pdf.rect(0, 0, width, height, fill=1, stroke=0)
+
+    card_x = 28
+    card_y = 34
+    card_w = width - 56
+    card_h = height - 68
+
+    pdf.setFillColor(colors.white)
+    pdf.roundRect(card_x, card_y, card_w, card_h, 14, fill=1, stroke=0)
+
+    # Top header
+    header_h = 92
+    pdf.setFillColor(colors.HexColor("#165a9a"))
+    pdf.roundRect(card_x, height - card_y - header_h, card_w, header_h, 14, fill=1, stroke=0)
+
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 26)
+    pdf.drawString(card_x + 18, height - card_y - 35, "MEDICARE")
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(card_x + 18, height - card_y - 52, "Compassionate Care, Trusted Excellence")
+
+    generated_text = timezone.localtime(timezone.now()).strftime("%d %b %Y, %I:%M %p")
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawRightString(card_x + card_w - 16, height - card_y - 30, "SLIP GENERATED")
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawRightString(card_x + card_w - 16, height - card_y - 48, generated_text)
+
+    # Title
+    y = height - card_y - header_h - 34
+    pdf.setFillColor(colors.HexColor("#1c2f47"))
+    pdf.setFont("Helvetica-Bold", 24)
+    pdf.drawCentredString(card_x + card_w / 2, y, "APPOINTMENT SLIP")
+
+    # Summary row
+    y -= 42
+    summary_h = 66
+    summary_w = card_w - 28
+    summary_x = card_x + 14
+    pdf.setFillColor(colors.HexColor("#eef3f9"))
+    pdf.roundRect(summary_x, y - summary_h, summary_w, summary_h, 8, fill=1, stroke=0)
+
+    for i in range(1, 4):
+        x = summary_x + (summary_w / 4) * i
+        pdf.setStrokeColor(colors.HexColor("#d5dfec"))
+        pdf.line(x, y - summary_h + 8, x, y - 8)
+
+    status = (appointment.status or "Pending").strip()
+    status_color = {
+        "Pending": colors.HexColor("#f59e0b"),
+        "Confirmed": colors.HexColor("#0ea5a8"),
+        "Completed": colors.HexColor("#188a52"),
+        "Cancelled": colors.HexColor("#dc2626"),
+    }.get(status, colors.HexColor("#64748b"))
+
+    blocks = [
+        ("APPOINTMENT ID", str(appointment.id)),
+        ("STATUS", status),
+        ("DATE", appointment.date.strftime("%d %b %Y")),
+        ("TIME", appointment.time.strftime("%I:%M %p")),
+    ]
+
+    for idx, (k, v) in enumerate(blocks):
+        bx = summary_x + (summary_w / 4) * idx + (summary_w / 8)
+        pdf.setFillColor(colors.HexColor("#35547a"))
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawCentredString(bx, y - 20, k)
+
+        if k == "STATUS":
+            pill_w = max(58, len(v) * 6.2 + 16)
+            pill_x = bx - (pill_w / 2)
+            pill_y = y - 46
+            pdf.setFillColor(status_color)
+            pdf.roundRect(pill_x, pill_y, pill_w, 18, 9, fill=1, stroke=0)
+            pdf.setFillColor(colors.white)
+            pdf.setFont("Helvetica-Bold", 10)
+            pdf.drawCentredString(bx, pill_y + 5, v)
+        else:
+            pdf.setFillColor(colors.HexColor("#1c2f47"))
+            pdf.setFont("Helvetica-Bold", 14)
+            pdf.drawCentredString(bx, y - 43, v)
+
+    # Detail cards
+    y -= (summary_h + 20)
+    card_h2 = 132
+    gap = 12
+    col_w = (summary_w - gap) / 2
+
+    def draw_detail_card(x, top_y, title, rows):
+        pdf.setFillColor(colors.white)
+        pdf.roundRect(x, top_y - card_h2, col_w, card_h2, 8, fill=1, stroke=0)
+        pdf.setStrokeColor(colors.HexColor("#d8e2ef"))
+        pdf.roundRect(x, top_y - card_h2, col_w, card_h2, 8, fill=0, stroke=1)
+        pdf.setFillColor(colors.HexColor("#165a9a"))
+        pdf.roundRect(x, top_y - 28, col_w, 28, 8, fill=1, stroke=0)
+        pdf.rect(x, top_y - 28, col_w, 14, fill=1, stroke=0)
+        pdf.setFillColor(colors.white)
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(x + 10, top_y - 18, title)
+
+        ry = top_y - 45
+        for label, value in rows:
+            pdf.setFont("Helvetica", 10)
+            pdf.setFillColor(colors.HexColor("#6b7c93"))
+            pdf.drawString(x + 10, ry, label)
+            pdf.setFillColor(colors.HexColor("#1f3551"))
+            pdf.setFont("Helvetica-Bold", 10)
+            pdf.drawRightString(x + col_w - 10, ry, value[:38])
+            ry -= 24
+
+    draw_detail_card(
+        summary_x,
+        y,
+        "PATIENT DETAILS",
+        [
+            ("Name", appointment.name or "N/A"),
+            ("Phone", appointment.phone or "N/A"),
+            ("Email", appointment.email or "N/A"),
+        ],
+    )
+
+    draw_detail_card(
+        summary_x + col_w + gap,
+        y,
+        "DOCTOR & HOSPITAL DETAILS",
+        [
+            ("Doctor", f"Dr. {appointment.doctor.name}" if appointment.doctor else "N/A"),
+            ("Specialist", appointment.doctor.specialist.name if appointment.doctor and appointment.doctor.specialist else "N/A"),
+            ("Hospital", appointment.hospital.name if appointment.hospital else "N/A"),
+        ],
+    )
+
+    # Payment section
+    y -= (card_h2 + 16)
+    pay_h = 95
+    pdf.setFillColor(colors.HexColor("#eaf7ef"))
+    pdf.roundRect(summary_x, y - pay_h, summary_w, pay_h, 8, fill=1, stroke=0)
+    pdf.setStrokeColor(colors.HexColor("#c9e8d3"))
+    pdf.roundRect(summary_x, y - pay_h, summary_w, pay_h, 8, fill=0, stroke=1)
+
+    pdf.setFillColor(colors.HexColor("#1d7a48"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(summary_x + 10, y - 18, "PAYMENT DETAILS")
+
+    inner_x = summary_x + 10
+    inner_y = y - 80
+    inner_w = summary_w - 20
+    inner_h = 48
+    pdf.setFillColor(colors.white)
+    pdf.roundRect(inner_x, inner_y, inner_w, inner_h, 6, fill=1, stroke=0)
+    pdf.setStrokeColor(colors.HexColor("#d7ecdf"))
+    pdf.roundRect(inner_x, inner_y, inner_w, inner_h, 6, fill=0, stroke=1)
+
+    for i in range(1, 3):
+        x = inner_x + (inner_w / 3) * i
+        pdf.setStrokeColor(colors.HexColor("#e4efe8"))
+        pdf.line(x, inner_y + 8, x, inner_y + inner_h - 8)
+
+    pay_cells = [
+        ("Payment ID", payment.payment_id if payment else "N/A"),
+        ("Order ID", payment.order_id if payment else "N/A"),
+        ("Amount", f"INR {amount}"),
+    ]
+    for idx, (k, v) in enumerate(pay_cells):
+        cx = inner_x + (inner_w / 3) * idx + 8
+        pdf.setFont("Helvetica-Bold", 8)
+        pdf.setFillColor(colors.HexColor("#6a7e74"))
+        pdf.drawString(cx, inner_y + inner_h - 14, k.upper())
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.setFillColor(colors.HexColor("#1f3a2d"))
+        pdf.drawString(cx, inner_y + 13, str(v)[:30])
+
+    # Footer
+    footer_y = card_y + 16
+    pdf.setFillColor(colors.HexColor("#165a9a"))
+    pdf.roundRect(summary_x, footer_y, summary_w, 24, 6, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawCentredString(summary_x + summary_w / 2, footer_y + 8, "Please carry this slip to the hospital. For any queries, contact support.")
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="appointment-slip-{appointment.id}.pdf"'
+    return response
+
+
 # ================= AUTH =================
 import random
-import time
+import time as pytime
 
 def register_view(request):
     if request.method == "POST":
@@ -660,7 +864,7 @@ def register_view(request):
         request.session['reg_email'] = email
         request.session['reg_phone'] = phone
         request.session['reg_otp'] = otp
-        request.session['reg_otp_expiry'] = time.time() + 600  # 10 minutes
+        request.session['reg_otp_expiry'] = pytime.time() + 600  # 10 minutes
 
         subject = "Your MediCare OTP Code"
         body = f"Hello,\n\nYour OTP for registration is: {otp}\n\nThis code expires in 10 minutes."
@@ -687,7 +891,7 @@ def verify_otp_view(request):
         expected_otp = request.session.get('reg_otp')
         expiry = request.session.get('reg_otp_expiry', 0)
 
-        if time.time() > expiry:
+        if pytime.time() > expiry:
             messages.error(request, "OTP expired. Please try again.")
             return redirect('register')
 
@@ -748,9 +952,9 @@ def complete_registration_view(request):
             if key in request.session:
                 del request.session[key]
 
-        messages.success(request, "Account created successfully! Please complete your profile.")
+        messages.success(request, "Account created successfully! You can book appointments now and complete profile later.")
         login(request, user)
-        return redirect('complete_profile')
+        return redirect('patient_dashboard')
 
     return render(request, 'complete_registration.html', {'email': email})
 
@@ -796,10 +1000,6 @@ def login_view(request):
                 return redirect('doctor_dashboard')
             else:
                 # Regular user / Patient
-                patient = Patient.objects.filter(user=user).first()
-                if patient and not (patient.phone and patient.gender and patient.age):
-                    messages.warning(request, "Please complete your profile to continue.")
-                    return redirect('complete_profile')
                 return redirect('patient_dashboard')
 
         existing_user = User.objects.filter(username=username).first()
@@ -878,8 +1078,6 @@ def complete_profile_view(request):
         
     return render(request, "complete_profile.html", {"patient": patient})
 
-
-from django.http import HttpResponse
 from django.core.mail import send_mail, EmailMessage
 
 def send_email_view(request):

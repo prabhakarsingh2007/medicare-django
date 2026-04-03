@@ -33,6 +33,7 @@ urlpatterns = [
     path("patient_dashboard/", patient_dashboard, name="patient_dashboard"),
     path("patient_profile/", patient_profile, name="patient_profile"),
     path("patient/my_appointments", my_appointments, name="my_appointments"),
+    path("patient/appointment/<int:id>/download-slip/", download_appointment_slip, name="download_appointment_slip"),
     path('register/', register_view, name='register'),
     path('verify-otp/', verify_otp_view, name='verify_otp'),
     path('complete-registration/', complete_registration_view, name='complete_registration'),
