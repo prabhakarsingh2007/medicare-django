@@ -11,9 +11,9 @@
             
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-extrabold pb-2 leading-tight bg-gradient-to-r from-blue-700 to-indigo-500 bg-clip-text text-transparent inline-block">
-                    Verify Your Account
+                    Verify Login OTP
                 </h1>
-                <p class="text-gray-500 text-sm mt-2">Enter the 6-digit OTP sent to your Email & Mobile<br/><strong class="text-blue-600">{{ email }}</strong> <br/><strong class="text-blue-600">+91 {{ phone }}</strong></p>
+                <p class="text-gray-500 text-sm mt-2">Enter the 6-digit OTP sent to your Email<br/><strong class="text-blue-600">{{ email }}</strong></p>
             </div>
 
             <form method="POST" action="{% url 'verify_otp' %}" class="space-y-5">

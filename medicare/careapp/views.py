@@ -65,6 +65,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.cache import cache
 from django.urls import reverse
+from django.utils.crypto import get_random_string
 import re
 from io import BytesIO
 
@@ -102,6 +103,22 @@ def is_valid_email_address(email):
         return True
     except ValidationError:
         return False
+
+
+def build_unique_username_from_email(email):
+    base = (email.split("@")[0] or "patient").strip().lower()
+    base = re.sub(r"[^a-z0-9_]", "", base)[:20] or "patient"
+    candidate = base
+    while User.objects.filter(username=candidate).exists():
+        candidate = f"{base}_{get_random_string(4).lower()}"
+    return candidate
+
+
+def is_patient_profile_complete(patient):
+    if not patient:
+        return False
+    required_fields = [patient.name, patient.email, patient.phone, patient.age, patient.gender]
+    return all(required_fields)
 
 
 def _login_lock_key(request, username):
@@ -346,7 +363,11 @@ def book_appointment(request, slug):
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})
 
-    return render(request, "book_appointment.html", {"doctor": doctor})
+    patient = Patient.objects.filter(user=request.user).first()
+    return render(request, "book_appointment.html", {
+        "doctor": doctor,
+        "patient": patient,
+    })
 
 def edit_appointment(request, id):
     appointment = get_object_or_404(Appointment, id=id, user=request.user)
@@ -507,10 +528,8 @@ def successfull_payment(request):
         ).order_by('-created_at').first()
 
     if not appointment:
-        return render(request, "appointment_success.html", {
-            "doctor": doctor,
-            "error": "Appointment not found"
-        })
+        messages.error(request, "Appointment not found")
+        return redirect("patient_dashboard")
 
     # Payment successful hone par appointment pending rahega.
     # Doctor dashboard se doctor khud Confirm/Complete karega.
@@ -528,13 +547,11 @@ def successfull_payment(request):
             }
         )
 
-    return render(request, "appointment_success.html", {
-        "doctor": doctor,
-        "appointment": appointment,
-        "payment_id": payment_id,
-        "date": appointment.date,
-        "time": appointment.time
-    })
+    patient = Patient.objects.filter(user=request.user).first()
+    messages.success(request, "Appointment booked successfully.")
+    if not is_patient_profile_complete(patient):
+        messages.warning(request, "Please complete your profile details for faster future bookings.")
+    return redirect("patient_dashboard")
 
 
 # ================= PATIENT =================
@@ -552,7 +569,16 @@ def patient_dashboard(request):
     if current_hospital and not patient.hospital:
         patient.hospital = current_hospital
         patient.save(update_fields=["hospital"])
-    return render(request, "patient/patient_dashboard.html", {"patient": patient})
+
+    appointments = Appointment.objects.filter(user=request.user).select_related("doctor", "hospital").order_by('-date', '-time')
+    if current_hospital:
+        appointments = appointments.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True)).order_by('-date', '-time')
+
+    return render(request, "patient/patient_dashboard.html", {
+        "patient": patient,
+        "appointments": appointments,
+        "profile_complete": is_patient_profile_complete(patient),
+    })
 
 
 @login_required(login_url='login')
@@ -846,119 +872,116 @@ import time as pytime
 def register_view(request):
     if request.method == "POST":
         email = (request.POST.get('email') or '').strip().lower()
-        phone = (request.POST.get('phone') or '').strip()
 
         if not is_valid_email_address(email):
             messages.error(request, "Please enter a valid email address")
             return redirect('register')
 
-        if not phone or not phone.isdigit() or len(phone) < 10:
-            messages.error(request, "Please enter a valid phone number")
-            return redirect('register')
-
-        if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already registered")
-            return redirect('register')
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user and (
+            existing_user.is_superuser
+            or Doctor.objects.filter(user=existing_user).exists()
+            or HospitalAdminProfile.objects.filter(user=existing_user, is_active=True).exists()
+        ):
+            messages.error(request, "This account uses staff login. Please sign in with username and password.")
+            return redirect('login')
 
         otp = str(random.randint(100000, 999999))
-        request.session['reg_email'] = email
-        request.session['reg_phone'] = phone
-        request.session['reg_otp'] = otp
-        request.session['reg_otp_expiry'] = pytime.time() + 600  # 10 minutes
+        request.session['otp_email'] = email
+        request.session['otp_code'] = otp
+        request.session['otp_expiry'] = pytime.time() + 600  # 10 minutes
+        request.session['otp_next'] = request.GET.get('next') or request.POST.get('next') or ''
 
         subject = "Your MediCare OTP Code"
-        body = f"Hello,\n\nYour OTP for registration is: {otp}\n\nThis code expires in 10 minutes."
+        body = f"Hello,\n\nYour login OTP is: {otp}\n\nThis code expires in 10 minutes."
         send_email_notification(subject, body, [email])
 
-        from .notifications import send_fast2sms_otp
-        send_fast2sms_otp(phone, otp)
-
-        messages.success(request, f"OTP sent to email {email} and mobile {phone}")
+        messages.success(request, f"OTP sent to email {email}")
         return redirect('verify_otp')
 
-    return render(request, 'register.html')
+    return render(request, 'register.html', {'next': request.GET.get('next', '')})
 
 
 def verify_otp_view(request):
-    email = request.session.get('reg_email')
-    phone = request.session.get('reg_phone')
+    email = request.session.get('otp_email')
     if not email:
         messages.error(request, "Session expired. Please start again.")
         return redirect('register')
 
     if request.method == "POST":
         entered_otp = request.POST.get('otp', '').strip()
-        expected_otp = request.session.get('reg_otp')
-        expiry = request.session.get('reg_otp_expiry', 0)
+        expected_otp = request.session.get('otp_code')
+        expiry = request.session.get('otp_expiry', 0)
 
         if pytime.time() > expiry:
             messages.error(request, "OTP expired. Please try again.")
             return redirect('register')
 
         if entered_otp == expected_otp:
-            request.session['email_verified'] = True
-            messages.success(request, "Email verified! Please complete your account details.")
-            return redirect('complete_registration')
+            user = User.objects.filter(email=email).first()
+            is_new_user = False
+
+            if user and (
+                user.is_superuser
+                or Doctor.objects.filter(user=user).exists()
+                or HospitalAdminProfile.objects.filter(user=user, is_active=True).exists()
+            ):
+                messages.error(request, "This account uses staff login. Please sign in with username and password.")
+                return redirect('login')
+
+            if not user:
+                username = build_unique_username_from_email(email)
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    first_name=email.split("@")[0],
+                    is_active=True,
+                )
+                user.set_unusable_password()
+                user.save(update_fields=["password"])
+                is_new_user = True
+            elif not user.is_active:
+                user.is_active = True
+                user.save(update_fields=["is_active"])
+
+            current_hospital = get_current_hospital(request)
+            patient, _ = Patient.objects.get_or_create(
+                user=user,
+                defaults={
+                    "name": user.first_name or user.username,
+                    "email": user.email,
+                    "hospital": current_hospital,
+                }
+            )
+            if current_hospital and not patient.hospital:
+                patient.hospital = current_hospital
+                patient.save(update_fields=["hospital"])
+
+            login(request, user)
+
+            next_url = request.session.get('otp_next', '')
+            for key in ['otp_email', 'otp_code', 'otp_expiry', 'otp_next']:
+                if key in request.session:
+                    del request.session[key]
+
+            if is_new_user:
+                messages.success(request, "Account created successfully. You are now logged in.")
+            else:
+                messages.success(request, "Logged in successfully.")
+
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            return redirect('patient_dashboard')
         else:
             messages.error(request, "Invalid OTP.")
             return redirect('verify_otp')
 
-    return render(request, 'verify_otp.html', {'email': email, 'phone': phone})
+    return render(request, 'verify_otp.html', {'email': email})
 
 
 def complete_registration_view(request):
-    if not request.session.get('email_verified'):
-        messages.error(request, "Please verify your email first.")
-        return redirect('register')
-
-    email = request.session.get('reg_email')
-    phone = request.session.get('reg_phone')
-    current_hospital = get_current_hospital(request)
-
-    if request.method == "POST":
-        full_name = request.POST.get('full_name')
-        username = request.POST.get('username')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
-
-        if not all([full_name, username, password1, password2]):
-            messages.error(request, "All fields required")
-            return redirect('complete_registration')
-
-        if password1 != password2:
-            messages.error(request, "Passwords do not match")
-            return redirect('complete_registration')
-
-        if not is_strong_password(password1):
-            messages.error(request, PASSWORD_RULE_TEXT)
-            return redirect('complete_registration')
-
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists")
-            return redirect('complete_registration')
-
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password1,
-            first_name=full_name,
-            is_active=True,
-        )
-
-        Patient.objects.create(user=user, name=full_name, email=email, phone=phone, hospital=current_hospital)
-
-        # Clear session
-        for key in ['reg_email', 'reg_phone', 'reg_otp', 'reg_otp_expiry', 'email_verified']:
-            if key in request.session:
-                del request.session[key]
-
-        messages.success(request, "Account created successfully! You can book appointments now and complete profile later.")
-        login(request, user)
-        return redirect('patient_dashboard')
-
-    return render(request, 'complete_registration.html', {'email': email})
-
-    return render(request, 'register.html')
+    messages.info(request, "Email OTP now signs you in directly. Please continue with OTP login.")
+    return redirect('register')
 
 
 def select_hospital(request, slug):
@@ -970,6 +993,34 @@ def select_hospital(request, slug):
 
 def login_view(request):
     if request.method == "POST":
+        if (request.POST.get('action') or '').strip() == 'otp':
+            email = (request.POST.get('email') or '').strip().lower()
+            if not is_valid_email_address(email):
+                messages.error(request, "Please enter a valid email address")
+                return redirect('login')
+
+            existing_user = User.objects.filter(email=email).first()
+            if existing_user and (
+                existing_user.is_superuser
+                or Doctor.objects.filter(user=existing_user).exists()
+                or HospitalAdminProfile.objects.filter(user=existing_user, is_active=True).exists()
+            ):
+                messages.error(request, "This account uses staff login. Please sign in with username and password.")
+                return redirect('login')
+
+            otp = str(random.randint(100000, 999999))
+            request.session['otp_email'] = email
+            request.session['otp_code'] = otp
+            request.session['otp_expiry'] = pytime.time() + 600
+            request.session['otp_next'] = request.POST.get('next') or request.GET.get('next') or ''
+
+            subject = "Your MediCare OTP Code"
+            body = f"Hello,\n\nYour login OTP is: {otp}\n\nThis code expires in 10 minutes."
+            send_email_notification(subject, body, [email])
+
+            messages.success(request, f"OTP sent to email {email}")
+            return redirect('verify_otp')
+
         username = request.POST.get('username')
         password = request.POST.get('password')
 
@@ -1012,7 +1063,9 @@ def login_view(request):
         messages.error(request, "Invalid credentials")
         return redirect('login')
 
-    return render(request, "login.html")
+    return render(request, "login.html", {
+        "next": request.GET.get("next", ""),
+    })
 
 
 @login_required

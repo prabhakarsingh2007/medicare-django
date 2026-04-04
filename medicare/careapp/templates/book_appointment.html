@@ -26,17 +26,17 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div class="space-y-1.5">
           <label class="text-sm font-semibold text-gray-700">Full Name</label>
-          <input type="text" name="name" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="text" name="name" value="{{ patient.name|default:user.get_full_name|default:user.username }}" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="space-y-1.5">
           <label class="text-sm font-semibold text-gray-700">Email Address</label>
-          <input type="email" name="email" required maxlength="254" placeholder="name@example.com" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="email" name="email" value="{{ patient.email|default:user.email }}" required maxlength="254" placeholder="name@example.com" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="space-y-1.5">
           <label class="text-sm font-semibold text-gray-700">Phone Number</label>
-          <input type="tel" name="phone" required minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric" placeholder="10-digit number" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="tel" name="phone" value="{{ patient.phone|default:'' }}" required minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric" placeholder="10-digit number" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div class="space-y-1.5">
