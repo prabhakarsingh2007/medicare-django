@@ -15,6 +15,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,12 +28,21 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(y%nj3ll#^hhr4!o$8@r@j8j4issa6efwl-xka11^ri*4ngfd5'
+SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True').lower() == 'true'
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -50,6 +60,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -58,7 +69,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'medicare.urls'
+PROJECT_PACKAGE = __package__ or 'medicare'
+ROOT_URLCONF = f'{PROJECT_PACKAGE}.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +87,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'medicare.wsgi.application'
+WSGI_APPLICATION = f'{PROJECT_PACKAGE}.wsgi.application'
 
 
 # Database
@@ -86,8 +98,8 @@ DATABASES = {
 # razopy key_id 
 
 
-RAZORPAY_KEY_ID = 'rzp_test_RJKzOMnn4i4LG0'
-RAZORPAY_KEY_SECRET = 'skDdejIqeeky1G0kAPw2wbE2'
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -125,6 +137,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -144,13 +157,10 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', f'Medicare <{EMAIL_HOST_USER}>')
 
-print(f"DEBUG: Loaded EMAIL_HOST_USER = '{EMAIL_HOST_USER}'")
-print(f"DEBUG: Loaded EMAIL_HOST_PASSWORD length = {len(EMAIL_HOST_PASSWORD) if EMAIL_HOST_PASSWORD else 0}")
-
 # ==============================================================================
 # 🚨 CRITICAL: YOU MUST PASTE YOUR FAST2SMS API KEY BELOW TO SEND REAL SMS 🚨
 # ==============================================================================
-FAST2SMS_API_KEY = 'PASTE_YOUR_ACTUAL_API_KEY_HERE_INSIDE_THESE_QUOTES'
+FAST2SMS_API_KEY = os.getenv('FAST2SMS_API_KEY', '')
 
 NOTIFICATIONS_ENABLE_SMS = os.getenv('NOTIFICATIONS_ENABLE_SMS', 'False').lower() == 'true'
 SMS_GATEWAY_URL = os.getenv('SMS_GATEWAY_URL', '')
