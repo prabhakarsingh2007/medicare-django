@@ -61,6 +61,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Q
+from django.db.utils import OperationalError, ProgrammingError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.cache import cache
@@ -148,16 +149,20 @@ def get_current_hospital(request):
     hospital_id = request.session.get("hospital_id")
     hospital = None
 
-    if selected_slug:
-        hospital = Hospital.objects.filter(slug=selected_slug, is_active=True).first()
-    elif hospital_id:
-        hospital = Hospital.objects.filter(id=hospital_id, is_active=True).first()
+    try:
+        if selected_slug:
+            hospital = Hospital.objects.filter(slug=selected_slug, is_active=True).first()
+        elif hospital_id:
+            hospital = Hospital.objects.filter(id=hospital_id, is_active=True).first()
 
-    if not hospital:
-        hospital = Hospital.objects.filter(is_active=True).order_by("name").first()
+        if not hospital:
+            hospital = Hospital.objects.filter(is_active=True).order_by("name").first()
 
-    if hospital:
-        request.session["hospital_id"] = hospital.id
+        if hospital:
+            request.session["hospital_id"] = hospital.id
+    except (OperationalError, ProgrammingError):
+        # Keep site usable if hospital tables are not ready yet in a fresh deploy.
+        return None
 
     return hospital
 
@@ -165,12 +170,20 @@ def get_current_hospital(request):
 # ================= HOME =================
 def home(request):
     current_hospital = get_current_hospital(request)
-    specialists = Specialist.objects.all()
 
-    if current_hospital:
-        specialists = specialists.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+    try:
+        specialists_qs = Specialist.objects.all()
 
-    hospitals = Hospital.objects.filter(is_active=True).order_by("name")
+        if current_hospital:
+            specialists_qs = specialists_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+
+        # Evaluate queries here so migration-related DB errors are caught gracefully.
+        specialists = list(specialists_qs)
+        hospitals = list(Hospital.objects.filter(is_active=True).order_by("name"))
+    except (OperationalError, ProgrammingError):
+        specialists = []
+        hospitals = []
+        current_hospital = None
 
     return render(request, "home.html", {
         "specialists": specialists,
