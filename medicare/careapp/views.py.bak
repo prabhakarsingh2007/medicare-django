@@ -144,27 +144,6 @@ def clear_login_failures(request, username):
     cache.delete(_login_lock_key(request, username))
 
 
-def _otp_lock_key(request, email):
-    ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR", "unknown")
-    return f"otp-lock:{ip}:{(email or '').lower()}"
-
-
-def is_otp_locked(request, email):
-    lock_key = _otp_lock_key(request, email)
-    attempts = cache.get(lock_key, 0)
-    return attempts >= 5
-
-
-def register_otp_failure(request, email):
-    lock_key = _otp_lock_key(request, email)
-    attempts = cache.get(lock_key, 0) + 1
-    cache.set(lock_key, attempts, timeout=900)  # 15 minutes lockout
-
-
-def clear_otp_failures(request, email):
-    cache.delete(_otp_lock_key(request, email))
-
-
 def get_current_hospital(request):
     selected_slug = request.GET.get("hospital")
     hospital_id = request.session.get("hospital_id")
@@ -942,10 +921,6 @@ def verify_otp_view(request):
         messages.error(request, "Session expired. Please start again.")
         return redirect('register')
 
-    if is_otp_locked(request, email):
-        messages.error(request, "Too many failed OTP attempts. Try again after 15 minutes.")
-        return redirect('register')
-
     if request.method == "POST":
         entered_otp = request.POST.get('otp', '').strip()
         expected_otp = request.session.get('otp_code')
@@ -956,7 +931,6 @@ def verify_otp_view(request):
             return redirect('register')
 
         if entered_otp == expected_otp:
-            clear_otp_failures(request, email)
             user = User.objects.filter(email=email).first()
             is_new_user = False
 
@@ -1012,14 +986,7 @@ def verify_otp_view(request):
                 return redirect(next_url)
             return redirect('patient_dashboard')
         else:
-            register_otp_failure(request, email)
-            if is_otp_locked(request, email):
-                messages.error(request, "Too many failed OTP attempts. Try again after 15 minutes.")
-                return redirect('register')
-            
-            attempts = cache.get(_otp_lock_key(request, email), 0)
-            remaining = 5 - attempts
-            messages.error(request, f"Invalid OTP. {remaining} attempts remaining.")
+            messages.error(request, "Invalid OTP.")
             return redirect('verify_otp')
 
     return render(request, 'verify_otp.html', {'email': email})
@@ -1176,3 +1143,33 @@ def complete_profile_view(request):
         return redirect('patient_dashboard')
         
     return render(request, "complete_profile.html", {"patient": patient})
+
+from django.core.mail import send_mail, EmailMessage
+
+def send_email_view(request):
+    try:
+        send_mail(
+            'Hello User',
+            'Welcome to my Django app',
+            settings.DEFAULT_FROM_EMAIL,
+            ['user@gmail.com'],
+            fail_silently=False,
+        )
+        return HttpResponse("Email Sent ✅")
+    except Exception as e:
+        return HttpResponse(f"Error sending email: {str(e)}", status=500)
+
+
+def send_html_email_view(request):
+    try:
+        email = EmailMessage(
+            'Subject',
+            '<h1>Hello</h1><p>This is HTML email</p>',
+            settings.DEFAULT_FROM_EMAIL,
+            ['user@gmail.com'],
+        )
+        email.content_subtype = 'html'
+        email.send(fail_silently=False)
+        return HttpResponse("HTML Email Sent ✅")
+    except Exception as e:
+        return HttpResponse(f"Error sending HTML email: {str(e)}", status=500)

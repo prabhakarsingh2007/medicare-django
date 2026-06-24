@@ -60,5 +60,7 @@ urlpatterns = [
     
     path("about/", about, name="about"),
     path("contact/", contact, name="contact"),
+    path("test-email/", send_email_view, name="test_email"),
+    path("test-html-email/", send_html_email_view, name="test_html_email"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -37,7 +37,7 @@
                     <div class="mt-6 space-y-3 border-t border-dashed border-slate-200 pt-4">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-medium">Consultation Fee</span>
-                            <span class="text-slate-800 font-bold">₹{{ doctor.fees|default:500 }}.00</span>
+                            <span class="text-slate-800 font-bold">₹700.00</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500 font-medium">Platform Fee</span>
@@ -45,7 +45,7 @@
                         </div>
                         <div class="flex justify-between text-lg pt-2">
                             <span class="text-slate-800 font-extrabold">Total Amount</span>
-                            <span class="text-blue-600 font-black">₹{{ doctor.fees|default:500 }}.00</span>
+                            <span class="text-blue-600 font-black">₹700.00</span>
                         </div>
                     </div>
                 </div>

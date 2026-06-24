@@ -7,7 +7,6 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Sum, Q
-from django.db.models.functions import TruncMonth
 from django.db import IntegrityError
 from datetime import timedelta, date as date_cls, datetime as dt_cls
 import json
@@ -66,51 +65,24 @@ def dashboard(request):
         patient_qs = patient_qs.filter(hospital=admin_hospital)
         appointment_qs = appointment_qs.filter(hospital=admin_hospital)
 
-    # Optimized Monthly Trend query using TruncMonth
-    monthly_trend = (
-        appointment_qs
-        .annotate(month=TruncMonth('date'))
-        .values('month')
-        .annotate(count=Count('id'))
-        .order_by('month')
-    )
-    monthly_labels = []
-    monthly_counts = []
-    for item in monthly_trend:
-        month_val = item['month']
-        if not month_val:
+    monthly_map = {}
+    for raw_date in appointment_qs.values_list('date', flat=True):
+        parsed_date = _normalize_date(raw_date)
+        if not parsed_date:
             continue
-        if isinstance(month_val, str):
-            try:
-                parsed_dt = dt_cls.fromisoformat(month_val)
-                month_label = parsed_dt.strftime('%b %Y')
-            except ValueError:
-                month_label = month_val
-        else:
-            month_label = month_val.strftime('%b %Y')
-        monthly_labels.append(month_label)
-        monthly_counts.append(item['count'])
+        month_key = parsed_date.replace(day=1)
+        monthly_map[month_key] = monthly_map.get(month_key, 0) + 1
 
-    # Optimized Daily Trend query (query last 14 days and aggregate in DB)
+    monthly_labels = [month.strftime('%b %Y') for month in sorted(monthly_map.keys())]
+    monthly_counts = [monthly_map[month] for month in sorted(monthly_map.keys())]
+
     trend_start = today - timedelta(days=13)
-    daily_trend = (
-        appointment_qs
-        .filter(date__range=[trend_start, today])
-        .values('date')
-        .annotate(count=Count('id'))
-        .order_by('date')
-    )
-    
     daily_map = {}
-    for item in daily_trend:
-        d_val = item['date']
-        if isinstance(d_val, str):
-            try:
-                d_val = date_cls.fromisoformat(d_val)
-            except ValueError:
-                pass
-        daily_map[d_val] = item['count']
-
+    for raw_date in appointment_qs.values_list('date', flat=True):
+        parsed_date = _normalize_date(raw_date)
+        if not parsed_date or parsed_date < trend_start or parsed_date > today:
+            continue
+        daily_map[parsed_date] = daily_map.get(parsed_date, 0) + 1
     daily_labels = []
     daily_counts = []
     for i in range(14):
@@ -370,6 +342,7 @@ def edit_doctor(request, pk):
     if request.method == 'POST':
         # Data Update Karne Ka Logic
         doctor.name = request.POST.get('name')
+        doctor.phone = request.POST.get('phone')
         doctor.experience = request.POST.get('experience')
         
         if request.FILES.get('image'):
