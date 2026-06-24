@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-[#f8fafc] py-12 px-4 relative overflow-hidden">
+    
+    <div class="absolute top-0 -left-10 w-96 h-96 bg-blue-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+    <div class="absolute bottom-0 -right-10 w-96 h-96 bg-cyan-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+
+    <div class="max-w-md w-full z-10">
+        <div class="bg-white/90 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] rounded-[2.5rem] p-8 border border-white relative">
+            
+            <div class="absolute -top-10 left-1/2 -translate-x-1/2">
+                <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-3xl shadow-xl shadow-blue-200 flex items-center justify-center rotate-12">
+                    <svg class="w-10 h-10 text-white -rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight">Checkout</h2>
+                <p class="text-gray-500 text-sm mt-1 font-medium italic">Order ID: #{{ order_id|slice:":8" }}</p>
+            </div>
+
+            <div class="mt-8 space-y-4">
+                <div class="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-600 border border-blue-50">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Appointment With</p>
+                            <h3 class="text-lg font-bold text-slate-800">{{ doctor.name }}</h3>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 space-y-3 border-t border-dashed border-slate-200 pt-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 font-medium">Consultation Fee</span>
+                            <span class="text-slate-800 font-bold">₹700.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 font-medium">Platform Fee</span>
+                            <span class="text-green-600 font-bold">FREE</span>
+                        </div>
+                        <div class="flex justify-between text-lg pt-2">
+                            <span class="text-slate-800 font-extrabold">Total Amount</span>
+                            <span class="text-blue-600 font-black">₹700.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="rzp-button1"
+                class="w-full mt-8 bg-gradient-to-r from-blue-700 to-blue-600 text-white font-bold py-4 rounded-2xl
+                       shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-1 active:scale-95
+                       transition duration-300 flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span>Pay Securely</span>
+            </button>
+
+            <div class="mt-8 flex items-center justify-center gap-4 border-t border-slate-50 pt-6">
+                <div class="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"></path></svg>
+                    SSL Secured
+                </div>
+                <div class="h-4 w-px bg-slate-200"></div>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" class="h-3 opacity-50 grayscale hover:grayscale-0 transition cursor-help">
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob { animation: blob 7s infinite; }
+.animation-delay-2000 { animation-delay: 2s; }
+</style>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    var options = {
+        key: "{{ razorpay_key }}",
+        amount: "{{ amount }}",
+        currency: "INR",
+        order_id: "{{ order_id }}",
+        appointment_id: "{{ appointment_id }}",
+        name: "MediCare",
+        description: "Doctor Appointment Fee",
+
+        handler: function (response) {
+
+            console.log("Payment Success Triggered");
+
+            var appointmentDate = document.getElementById("appointmentDate")?.value;
+            var appointmentTime = document.getElementById("appointmentTime")?.value;
+
+            var redirectUrl = "/successfull/?payment_id="
+                + response.razorpay_payment_id
+                + "&order_id=" + response.razorpay_order_id
+                + "&doctor_id={{ doctor.id }}"
+                + "&appointment_id={{ appointment_id }}"
+                + "&date=" + encodeURIComponent(appointmentDate || "")
+                + "&time=" + encodeURIComponent(appointmentTime || "");
+
+            console.log("Redirecting to:", redirectUrl);
+
+            window.location.href = redirectUrl;
+        },
+
+        modal: {
+            ondismiss: function () {
+                console.log("Payment popup closed");
+            }
+        },
+
+        theme: {
+            color: "#2563eb"
+        }
+    };
+
+    var rzp1 = new Razorpay(options);
+
+    document.getElementById("rzp-button1").onclick = function (e) {
+        e.preventDefault();
+        rzp1.open();
+    };
+
+});
+</script>
+
+
+{% endblock %}

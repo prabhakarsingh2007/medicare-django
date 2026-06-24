@@ -1,0 +1,293 @@
+{% extends "dashboard/adminbase.html" %}
+
+{% block admin_content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-3xl font-black text-slate-800 tracking-tight">Dashboard Overview</h1>
+        <p class="text-slate-500 font-medium">Hospital ki live report aur naye updates.</p>
+        {% if current_admin_hospital %}
+        <p class="text-xs font-bold text-blue-600 mt-1">Hospital Scope: {{ current_admin_hospital.name }}</p>
+        {% endif %}
+    </div>
+    <div class="bg-white px-5 py-2.5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold italic">📅</div>
+        <div>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Date</p>
+            <p class="text-sm font-bold text-slate-700">{% now "M d, Y" %}</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+    <a href="{% url 'view_doctor' %}" class="group bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all">
+        <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-6 transition-transform text-2xl font-bold">👨‍⚕️</div>
+        <h3 class="text-slate-500 font-bold text-sm uppercase tracking-widest mb-1">Total Doctors</h3>
+        <p class="text-4xl font-black text-slate-800">{{ doctor_count }}</p>
+    </a>
+
+    <a href="{% url 'view_patient' %}" class="group bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all">
+        <div class="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-6 transition-transform text-2xl font-bold">👤</div>
+        <h3 class="text-slate-500 font-bold text-sm uppercase tracking-widest mb-1">Total Patients</h3>
+        <p class="text-4xl font-black text-slate-800">{{ patient_count }}</p>
+    </a>
+
+    <a href="{% url 'view_appointment' %}" class="group bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all relative">
+        <div class="absolute top-6 right-8 bg-rose-50 text-rose-600 text-[10px] font-black px-3 py-1 rounded-full border border-rose-100 uppercase">
+            Today: {{ today_count }}
+        </div>
+        <div class="w-14 h-14 bg-rose-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-6 transition-transform text-2xl font-bold">📅</div>
+        <h3 class="text-slate-500 font-bold text-sm uppercase tracking-widest mb-1">Total Appointments</h3>
+        <p class="text-4xl font-black text-slate-800">{{ appointment_count }}</p>
+    </a>
+</div>
+
+{% if request.user.is_superuser and super_dashboard %}
+<div class="mb-10">
+    <div class="mb-4">
+        <h2 class="text-2xl font-black text-slate-800">Multi-Hospital Super Dashboard</h2>
+        <p class="text-slate-500 text-sm">All hospitals overview with revenue, usage, and active user intelligence.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold tracking-widest text-slate-400">Total Revenue</p>
+            <p class="text-3xl font-black text-emerald-600 mt-1">Rs. {{ super_dashboard.total_revenue }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold tracking-widest text-slate-400">Total Usage</p>
+            <p class="text-3xl font-black text-blue-600 mt-1">{{ super_dashboard.total_usage }}</p>
+            <p class="text-xs text-slate-500 mt-1">Appointments across all hospitals</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold tracking-widest text-slate-400">Avg Usage / Hospital</p>
+            <p class="text-3xl font-black text-indigo-600 mt-1">{{ super_dashboard.avg_usage_per_hospital }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold tracking-widest text-slate-400">Top Usage Hospital</p>
+            <p class="text-lg font-black text-slate-800 mt-1">{{ super_dashboard.top_hospital_name }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ super_dashboard.top_hospital_usage }} appointments</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold text-slate-400">Active Users (All)</p>
+            <p class="text-2xl font-black text-slate-800 mt-1">{{ super_dashboard.active_users_total }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold text-slate-400">Active in 30 Days</p>
+            <p class="text-2xl font-black text-cyan-700 mt-1">{{ super_dashboard.active_users_30d }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold text-slate-400">Active Hospital Admins</p>
+            <p class="text-2xl font-black text-violet-700 mt-1">{{ super_dashboard.active_hospital_admins }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold text-slate-400">Active Doctors</p>
+            <p class="text-2xl font-black text-blue-700 mt-1">{{ super_dashboard.active_doctors }}</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase font-bold text-slate-400">Active Patients</p>
+            <p class="text-2xl font-black text-emerald-700 mt-1">{{ super_dashboard.active_patients }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="p-6 border-b border-slate-100">
+            <h3 class="text-lg font-bold text-slate-800">All Hospitals Overview</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="p-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Hospital</th>
+                        <th class="p-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Doctors</th>
+                        <th class="p-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Patients</th>
+                        <th class="p-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Appointments</th>
+                        <th class="p-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Active Admins</th>
+                        <th class="p-4 text-[11px] font-black uppercase tracking-widest text-slate-500">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in super_dashboard.overview_rows %}
+                    <tr class="hover:bg-slate-50/70">
+                        <td class="p-4 font-bold text-slate-800">{{ row.name }}</td>
+                        <td class="p-4 text-slate-700">{{ row.doctor_total }}</td>
+                        <td class="p-4 text-slate-700">{{ row.patient_total }}</td>
+                        <td class="p-4 text-slate-700">{{ row.appointment_total }}</td>
+                        <td class="p-4 text-slate-700">{{ row.active_admin_total }}</td>
+                        <td class="p-4 font-bold text-emerald-700">Rs. {{ row.revenue_total }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-slate-400">No hospitals found for overview.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-10">
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">Monthly Appointments Trend</h3>
+        <div class="h-72">
+            <canvas id="monthlyAppointmentsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">Doctor-wise Patient Count</h3>
+        <div class="h-72">
+            <canvas id="doctorPatientChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-10">
+    <h3 class="text-lg font-bold text-slate-800 mb-4">Daily Booking Trend (Last 14 Days)</h3>
+    <div class="h-80">
+        <canvas id="dailyBookingChart"></canvas>
+    </div>
+</div>
+
+<div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+    <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+        <h2 class="text-xl font-bold text-slate-800">Recent Appointments</h2>
+        <a href="{% url 'view_appointment' %}" class="text-blue-600 text-sm font-bold hover:underline">View All →</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50/50">
+                <tr>
+                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date/Time</th>
+                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for appt in recent_appointments %}
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="p-5">
+                        <div class="font-bold text-slate-700">{{ appt.name }}</div>
+                        <div class="text-[10px] text-slate-400">{{ appt.phone }}</div>
+                    </td>
+                    <td class="p-5 text-sm font-medium text-slate-600">Dr. {{ appt.doctor.name }}</td>
+                    <td class="p-5 text-sm font-bold text-slate-500">{{ appt.date }} <span class="text-blue-500 text-[10px]">{{ appt.time }}</span></td>
+                    <td class="p-5 text-center">
+                        <a href="{% url 'view_appointment' %}" class="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-[10px] font-bold">Details</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="p-10 text-center text-slate-400">No recent activity.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{ monthly_labels|json_script:"monthly-labels-data" }}
+{{ monthly_counts|json_script:"monthly-counts-data" }}
+{{ doctor_labels|json_script:"doctor-labels-data" }}
+{{ doctor_patient_counts|json_script:"doctor-patient-counts-data" }}
+{{ daily_labels|json_script:"daily-labels-data" }}
+{{ daily_counts|json_script:"daily-counts-data" }}
+
+<script>
+    const monthlyLabels = JSON.parse(document.getElementById('monthly-labels-data').textContent);
+    const monthlyCounts = JSON.parse(document.getElementById('monthly-counts-data').textContent);
+    const doctorLabels = JSON.parse(document.getElementById('doctor-labels-data').textContent);
+    const doctorPatientCounts = JSON.parse(document.getElementById('doctor-patient-counts-data').textContent);
+    const dailyLabels = JSON.parse(document.getElementById('daily-labels-data').textContent);
+    const dailyCounts = JSON.parse(document.getElementById('daily-counts-data').textContent);
+
+    const monthlyCtx = document.getElementById('monthlyAppointmentsChart');
+    if (monthlyCtx) {
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [{
+                    label: 'Appointments',
+                    data: monthlyCounts,
+                    backgroundColor: 'rgba(37, 99, 235, 0.75)',
+                    borderRadius: 10,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } },
+                },
+            },
+        });
+    }
+
+    const doctorCtx = document.getElementById('doctorPatientChart');
+    if (doctorCtx) {
+        new Chart(doctorCtx, {
+            type: 'doughnut',
+            data: {
+                labels: doctorLabels,
+                datasets: [{
+                    label: 'Unique Patients',
+                    data: doctorPatientCounts,
+                    backgroundColor: [
+                        '#2563eb', '#10b981', '#f97316', '#06b6d4', '#8b5cf6',
+                        '#e11d48', '#14b8a6', '#f59e0b', '#0ea5e9', '#22c55e'
+                    ],
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                },
+            },
+        });
+    }
+
+    const dailyCtx = document.getElementById('dailyBookingChart');
+    if (dailyCtx) {
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: dailyLabels,
+                datasets: [{
+                    label: 'Bookings',
+                    data: dailyCounts,
+                    borderColor: '#0f766e',
+                    backgroundColor: 'rgba(20, 184, 166, 0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#0f766e',
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true },
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } },
+                },
+            },
+        });
+    }
+</script>
+
+{% endblock %}
