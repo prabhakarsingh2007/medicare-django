@@ -17,8 +17,6 @@ from core.models import Specialist, Hospital
 from payments.models import Payment
 from core.security_utils import is_strong_password, PASSWORD_RULE_TEXT
 from core.activity import log_activity
-from core.forms import HospitalForm, SpecialistForm
-from doctors.forms import DoctorForm
 
 
 def is_hospital_admin_or_superuser(user):
@@ -232,61 +230,94 @@ def add_doctor(request):
         hospitals = hospitals.filter(id=admin_hospital.id)
         specialists = specialists.filter(hospital=admin_hospital)
 
-    # Legacy manual validation kept for reference/safety during conversion:
-    # if request.method == "POST":
-    #     name = (request.POST.get("name") or "").strip()
-    #     photo = request.FILES.get("photo")
-    #     qualification = (request.POST.get("qualification") or "").strip()
-    #     specialist_id = request.POST.get("specialist")
-    #     experience = (request.POST.get("experience") or "").strip()
-    #     username = (request.POST.get("username") or "").strip()
-    #     password = request.POST.get("password") or ""
-    #     hospital_id = request.POST.get("hospital")
-
     if request.method == "POST":
-        post_data = request.POST.copy()
+        name = (request.POST.get("name") or "").strip()
+        photo = request.FILES.get("photo")
+        qualification = (request.POST.get("qualification") or "").strip()
+        specialist_id = request.POST.get("specialist")
+        experience = (request.POST.get("experience") or "").strip()
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        hospital_id = request.POST.get("hospital")
+
+        if not all([name, qualification, specialist_id, experience, username, password]):
+            messages.error(request, "Please fill all required fields")
+            return redirect("add_doctor")
+
+        try:
+            exp_value = int(experience)
+            if exp_value < 0:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "Experience must be a valid non-negative number")
+            return redirect("add_doctor")
+
         if admin_hospital:
-            post_data['hospital'] = admin_hospital.id
-
-        form = DoctorForm(post_data, request.FILES)
-        if form.is_valid():
-            try:
-                user = User.objects.create_user(
-                    username=form.cleaned_data['username'],
-                    password=form.cleaned_data['password'],
-                    first_name=form.cleaned_data['name']
-                )
-                user.is_staff = True
-                user.save()
-
-                doctor = form.save(commit=False)
-                doctor.user = user
-                doctor.save()
-
-                log_activity(
-                    actor=request.user,
-                    action="doctor_created",
-                    target_type="doctor",
-                    target_id=user.username,
-                    description=f"Doctor account created for {doctor.name}",
-                    extra_data={"hospital_id": doctor.hospital.id if doctor.hospital else None, "specialist_id": doctor.specialist.id},
-                )
-
-                messages.success(request, "Doctor added successfully!")
-                return redirect("view_doctor")
-            except Exception as exc:
-                messages.error(request, f"Unable to add doctor: {exc}")
+            hospital = admin_hospital
+        elif not hospital_id:
+            messages.error(request, "Please select hospital")
+            return redirect("add_doctor")
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.capitalize()}: {error}")
-            for error in form.non_field_errors():
-                messages.error(request, error)
-    else:
-        form = DoctorForm()
+            hospital = get_object_or_404(Hospital, id=hospital_id)
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists")
+            return redirect("add_doctor")
+
+        if not is_strong_password(password):
+            messages.error(request, PASSWORD_RULE_TEXT)
+            return redirect("add_doctor")
+
+        specialist = Specialist.objects.filter(id=specialist_id).first()
+        if not specialist:
+            messages.error(request, "Please select a valid specialist")
+            return redirect("add_doctor")
+
+        if specialist.hospital_id and specialist.hospital_id != hospital.id:
+            messages.error(request, "Selected specialist belongs to another hospital")
+            return redirect("add_doctor")
+
+        try:
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                first_name=name
+            )
+            user.is_staff = True
+            user.save()
+
+            slug = slugify(name)
+
+            Doctor.objects.create(
+                name=name,
+                hospital=hospital,
+                user=user,
+                slug=slug,
+                image=photo,
+                qualification=qualification,
+                specialist=specialist,
+                experience=exp_value
+            )
+        except IntegrityError:
+            messages.error(request, "Unable to add doctor due to duplicate/conflicting data. Please try different details.")
+            return redirect("add_doctor")
+        except Exception as exc:
+            messages.error(request, f"Unable to add doctor: {exc}")
+            return redirect("add_doctor")
+
+        log_activity(
+            actor=request.user,
+            action="doctor_created",
+            target_type="doctor",
+            target_id=username,
+            description=f"Doctor account created for {name}",
+            extra_data={"hospital_id": hospital.id, "specialist_id": specialist.id},
+        )
+
+        messages.success(request, "Doctor added successfully!")
+        return redirect("view_doctor")
 
     return render(request, "dashboard/add_doctor.html", {
-        "form": form,
         "specialists": specialists,
         "hospitals": hospitals,
         "allow_hospital_select": request.user.is_superuser,
@@ -406,39 +437,38 @@ def add_specialist(request):
     if admin_hospital:
         hospitals = hospitals.filter(id=admin_hospital.id)
 
-    # Legacy manual parsing kept for reference/safety during conversion:
-    # if request.method == "POST":
-    #     name = request.POST.get("name")
-    #     icon = request.FILES.get("icon")
-    #     hospital_id = request.POST.get("hospital")
-    #     if admin_hospital: hospital = admin_hospital
-    #     elif not hospital_id: return redirect("add_specialist")
-    #     else: hospital = get_object_or_404(Hospital, id=hospital_id)
-    #     Specialist.objects.create(hospital=hospital, name=name, icon=icon)
-
     if request.method == "POST":
-        form = SpecialistForm(request.POST, request.FILES)
-        if form.is_valid():
-            specialist = form.save()
-            log_activity(
-                actor=request.user,
-                action="specialist_created",
-                target_type="specialist",
-                target_id=specialist.name,
-                description=f"Specialist created: {specialist.name}",
-                extra_data={"hospital_id": specialist.hospital.id} if specialist.hospital else {},
-            )
-            messages.success(request, "Specialist Added Successfully")
-            return redirect("view_specialist")
+        name = request.POST.get("name")
+        icon = request.FILES.get("icon")
+        hospital_id = request.POST.get("hospital")
+
+        if admin_hospital:
+            hospital = admin_hospital
+        elif not hospital_id:
+            messages.error(request, "Please select hospital")
+            return redirect("add_specialist")
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.capitalize()}: {error}")
-    else:
-        form = SpecialistForm()
+            hospital = get_object_or_404(Hospital, id=hospital_id)
+
+        Specialist.objects.create(
+            hospital=hospital,
+            name=name,
+            icon=icon
+        )
+
+        log_activity(
+            actor=request.user,
+            action="specialist_created",
+            target_type="specialist",
+            target_id=name,
+            description=f"Specialist created: {name}",
+            extra_data={"hospital_id": hospital.id},
+        )
+
+        messages.success(request, "Specialist Added Successfully")
+        return redirect("view_specialist")
 
     return render(request, "dashboard/add_specialist.html", {
-        "form": form,
         "hospitals": hospitals,
         "allow_hospital_select": request.user.is_superuser,
         "current_admin_hospital": admin_hospital,
@@ -504,36 +534,38 @@ def add_hospital(request):
         messages.error(request, "Only super admin can add hospitals")
         return redirect("admin-dashboard")
 
-    # Legacy manual parsing kept for reference/safety during conversion:
-    # if request.method == "POST":
-    #     name = (request.POST.get("name") or "").strip()
-    #     address = (request.POST.get("address") or "").strip()
-    #     phone = (request.POST.get("phone") or "").strip()
-    #     email = (request.POST.get("email") or "").strip().lower()
-
     if request.method == "POST":
-        form = HospitalForm(request.POST)
-        if form.is_valid():
-            hospital = form.save(commit=False)
-            hospital.is_active = True
-            hospital.save()
-            log_activity(
-                actor=request.user,
-                action="hospital_created",
-                target_type="hospital",
-                target_id=str(hospital.id),
-                description=f"Hospital created: {hospital.name}",
-            )
-            messages.success(request, "Hospital added successfully")
-            return redirect("view_hospital")
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.capitalize()}: {error}")
-    else:
-        form = HospitalForm()
+        name = (request.POST.get("name") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        phone = (request.POST.get("phone") or "").strip()
+        email = (request.POST.get("email") or "").strip().lower()
 
-    return render(request, "dashboard/add_hospital.html", {"form": form})
+        if not name:
+            messages.error(request, "Hospital name is required")
+            return redirect("add_hospital")
+
+        if Hospital.objects.filter(name__iexact=name).exists():
+            messages.error(request, "Hospital already exists")
+            return redirect("add_hospital")
+
+        hospital = Hospital.objects.create(
+            name=name,
+            address=address or None,
+            phone=phone or None,
+            email=email or None,
+            is_active=True,
+        )
+        log_activity(
+            actor=request.user,
+            action="hospital_created",
+            target_type="hospital",
+            target_id=str(hospital.id),
+            description=f"Hospital created: {hospital.name}",
+        )
+        messages.success(request, "Hospital added successfully")
+        return redirect("view_hospital")
+
+    return render(request, "dashboard/add_hospital.html")
 
 
 @hospital_admin_required

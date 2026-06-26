@@ -24,13 +24,13 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-                    <input type="text" name="name" id="doctor-name" value="{{ form.name.value|default:'' }}" required placeholder="Dr. Sameer Khan"
+                    <input type="text" name="name" id="doctor-name" required placeholder="Dr. Sameer Khan"
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Doctor Photo</label>
-                    <input type="file" name="image" accept="image/*"
+                    <input type="file" name="photo" accept="image/*"
                         class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
                 </div>
             </div>
@@ -45,9 +45,9 @@
                     {% if allow_hospital_select %}
                         <select name="hospital" required
                             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer appearance-none">
-                            <option value="" disabled {% if not form.hospital.value %}selected{% endif %}>Select Hospital</option>
+                            <option value="" disabled selected>Select Hospital</option>
                             {% for h in hospitals %}
-                                <option value="{{ h.id }}" {% if form.hospital.value|stringformat:"s" == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                                <option value="{{ h.id }}">{{ h.name }}</option>
                             {% endfor %}
                         </select>
                     {% else %}
@@ -59,7 +59,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Qualification</label>
-                    <input type="text" name="qualification" value="{{ form.qualification.value|default:'' }}" required placeholder="e.g. MBBS, MD, MS"
+                    <input type="text" name="qualification" required placeholder="e.g. MBBS, MD, MS"
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
                 </div>
 
@@ -67,16 +67,16 @@
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Specialization</label>
                     <select name="specialist" required 
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer appearance-none">
-                        <option value="" disabled {% if not form.specialist.value %}selected{% endif %}>Select Category</option>
+                        <option value="" disabled selected>Select Category</option>
                         {% for sp in specialists %}
-                            <option value="{{ sp.id }}" {% if form.specialist.value|stringformat:"s" == sp.id|stringformat:"s" %}selected{% endif %}>{{ sp.name }}{% if sp.hospital %} - {{ sp.hospital.name }}{% endif %}</option>
+                            <option value="{{ sp.id }}">{{ sp.name }}{% if sp.hospital %} - {{ sp.hospital.name }}{% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Exp. (Years)</label>
-                    <input type="number" name="experience" value="{{ form.experience.value|default:'' }}" required placeholder="e.g. 5"
+                    <input type="number" name="experience" required placeholder="e.g. 5"
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition">
                 </div>
             </div>
@@ -95,7 +95,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Set Username</label>
-                    <input type="text" name="username" value="{{ form.username.value|default:'' }}" required placeholder="e.g. sameer_123"
+                    <input type="text" name="username" required placeholder="e.g. sameer_123"
                         class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none">
                 </div>
 

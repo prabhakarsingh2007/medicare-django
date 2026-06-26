@@ -30,9 +30,9 @@
                     {% if allow_hospital_select %}
                         <select name="hospital" required
                             class="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm font-semibold">
-                            <option value="" disabled {% if not form.hospital.value %}selected{% endif %}>Select hospital</option>
+                            <option value="" disabled selected>Select hospital</option>
                             {% for h in hospitals %}
-                            <option value="{{ h.id }}" {% if form.hospital.value|stringformat:"s" == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                            <option value="{{ h.id }}">{{ h.name }}</option>
                             {% endfor %}
                         </select>
                     {% else %}
@@ -44,7 +44,7 @@
 
                 <div class="group">
                     <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Specialist Category Name</label>
-                    <input type="text" name="name" value="{{ form.name.value|default:'' }}" required
+                    <input type="text" name="name" required
                         placeholder="e.g. Neurologist, Dentist"
                         class="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white text-slate-800 rounded-2xl p-4 transition-all outline-none shadow-sm font-semibold">
                 </div>
