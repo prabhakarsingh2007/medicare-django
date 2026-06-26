@@ -1,0 +1,21 @@
+# Pyrefly configuration for Medicare Django project
+# This tells Pyrefly to use the project's virtual environment interpreter
+# and to recognize the project structure correctly.
+
+python_interpreter = ".venv/Scripts/python.exe"
+
+# Add the project root and django app root to search paths
+# so imports like `from accounts.models import X` resolve correctly
+search_path = [
+    ".",
+    "medicare",
+]
+
+# Exclude non-source directories from type checking
+exclude = [
+    ".venv/**",
+    "**/migrations/**",
+    "refactor_backups/**",
+    "server/**",
+    "**/__pycache__/**",
+]

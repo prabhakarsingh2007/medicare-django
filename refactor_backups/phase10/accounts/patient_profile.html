@@ -42,36 +42,36 @@
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Full Name</label>
-                            <input type="text" name="full_name" value="{{ form.full_name.value|default:patient.name|default:user.first_name }}" required class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                            <input type="text" name="full_name" value="{{ patient.name|default:user.first_name }}" required class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Email</label>
-                            <input type="email" name="email" value="{{ form.email.value|default:patient.email|default:user.email }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                            <input type="email" name="email" value="{{ patient.email|default:user.email }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Phone</label>
-                            <input type="text" name="phone" value="{{ form.phone.value|default:patient.phone|default:'' }}" placeholder="10-15 digits" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                            <input type="text" name="phone" value="{{ patient.phone|default:'' }}" placeholder="10-15 digits" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Age</label>
-                            <input type="number" name="age" min="1" max="130" value="{{ form.age.value|default:patient.age|default:'' }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                            <input type="number" name="age" min="1" max="130" value="{{ patient.age|default:'' }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Date of Birth</label>
-                            <input type="date" name="date_of_birth" value="{{ form.date_of_birth.value|default:patient.date_of_birth|date:'Y-m-d' }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                            <input type="date" name="date_of_birth" value="{{ patient.date_of_birth|date:'Y-m-d' }}" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Gender</label>
                             <select name="gender" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300">
                                 <option value="">Select gender</option>
-                                <option value="Male" {% if form.gender.value == "Male" or patient.gender == "Male" %}selected{% endif %}>Male</option>
-                                <option value="Female" {% if form.gender.value == "Female" or patient.gender == "Female" %}selected{% endif %}>Female</option>
-                                <option value="Other" {% if form.gender.value == "Other" or patient.gender == "Other" %}selected{% endif %}>Other</option>
+                                <option value="Male" {% if patient.gender == "Male" %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if patient.gender == "Female" %}selected{% endif %}>Female</option>
+                                <option value="Other" {% if patient.gender == "Other" %}selected{% endif %}>Other</option>
                             </select>
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-semibold text-slate-600 mb-1">Address</label>
-                            <textarea name="address" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300">{{ form.address.value|default:patient.address|default:'' }}</textarea>
+                            <textarea name="address" rows="3" class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300">{{ patient.address|default:'' }}</textarea>
                         </div>
                     </div>
 

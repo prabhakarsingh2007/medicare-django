@@ -11,4 +11,5 @@ urlpatterns = [
     path("", include("appointments.urls")),
     path("", include("payments.urls")),
     path("", include("dashboard.urls")),
+    path("", include("ehr.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

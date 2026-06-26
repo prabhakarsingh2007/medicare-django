@@ -33,11 +33,12 @@ from accounts.views import (
 
 @login_required(login_url='login')
 def book_appointment(request, slug):
-    current_hospital = get_current_hospital(request)
-    doctor_qs = Doctor.objects.filter(slug=slug)
-    if current_hospital:
-        doctor_qs = doctor_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
-    doctor = get_object_or_404(doctor_qs)
+    doctor = get_object_or_404(Doctor, slug=slug)
+    if doctor.hospital:
+        request.session["hospital_id"] = doctor.hospital.id
+        current_hospital = doctor.hospital
+    else:
+        current_hospital = get_current_hospital(request)
 
     if request.method == "POST":
         try:
@@ -104,31 +105,23 @@ def book_appointment(request, slug):
 
             notify_appointment_booked(appointment)
 
-            try:
-                from payments.views import client
-                order = client.order.create({
-                    "amount": amount_in_paise,
-                    "currency": "INR",
-                    "payment_capture": 1
-                })
-
-                return JsonResponse({
-                    'success': True,
-                    'pay_required': True,
-                    'order_id': order['id'],
-                    'amount': order['amount'],
-                    'razorpay_key': settings.RAZORPAY_KEY_ID,
-                    'appointment_id': appointment.id
-                })
-            except Exception:
-                fallback_url = reverse('successful_payment') + f"?doctor_id={doctor.id}&appointment_id={appointment.id}"
+            if request.POST.get("payment_method") == "offline":
+                success_url = reverse('my_appointments')
                 return JsonResponse({
                     'success': True,
                     'pay_required': False,
                     'appointment_id': appointment.id,
-                    'redirect_url': fallback_url,
-                    'message': 'Appointment booked. Payment gateway unavailable, so appointment is kept pending.'
+                    'redirect_url': success_url,
+                    'message': 'Appointment booked successfully. You can pay at the clinic.'
                 })
+
+            # Direct the user to the custom mock payment page
+            payment_url = reverse('payment', kwargs={'id': doctor.id}) + f"?appointment_id={appointment.id}"
+            return JsonResponse({
+                'success': True,
+                'pay_required': True,
+                'redirect_url': payment_url
+            })
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})

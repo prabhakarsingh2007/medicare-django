@@ -3,6 +3,7 @@
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-[#f8fafc] py-12 px-4 relative overflow-hidden">
     
+    <!-- Decorative background elements -->
     <div class="absolute top-0 -left-10 w-96 h-96 bg-blue-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
     <div class="absolute bottom-0 -right-10 w-96 h-96 bg-cyan-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
 
@@ -19,57 +20,145 @@
 
             <div class="mt-12 text-center">
                 <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight">Checkout</h2>
-                <p class="text-gray-500 text-sm mt-1 font-medium italic">Order ID: #{{ order_id|slice:":8" }}</p>
+                <p class="text-gray-500 text-sm mt-1 font-medium italic">Order ID: #{{ order_id|slice:":12" }}</p>
             </div>
 
-            <div class="mt-8 space-y-4">
+            <!-- Booking Summary -->
+            <div class="mt-6 space-y-4">
                 <div class="bg-slate-50 rounded-3xl p-6 border border-slate-100">
                     <div class="flex items-center gap-4">
                         <div class="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-600 border border-blue-50">
-                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
                         </div>
                         <div>
                             <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Appointment With</p>
-                            <h3 class="text-lg font-bold text-slate-800">{{ doctor.name }}</h3>
+                            <h3 class="text-base font-bold text-slate-800">Dr. {{ doctor.name }}</h3>
                         </div>
                     </div>
 
-                    <div class="mt-6 space-y-3 border-t border-dashed border-slate-200 pt-4">
+                    <div class="mt-4 space-y-2 border-t border-dashed border-slate-200 pt-3">
                         <div class="flex justify-between text-sm">
-                            <span class="text-gray-500 font-medium">Consultation Fee</span>
-                            <span class="text-slate-800 font-bold">₹{{ doctor.fees|default:500 }}.00</span>
+                            <span class="text-gray-500 font-medium">Consultation Fee:</span>
+                            <span class="text-slate-800 font-bold">₹{{ amount }}.00</span>
                         </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500 font-medium">Platform Fee</span>
-                            <span class="text-green-600 font-bold">FREE</span>
-                        </div>
-                        <div class="flex justify-between text-lg pt-2">
-                            <span class="text-slate-800 font-extrabold">Total Amount</span>
-                            <span class="text-blue-600 font-black">₹{{ doctor.fees|default:500 }}.00</span>
+                        <div class="flex justify-between text-lg pt-1">
+                            <span class="text-slate-800 font-extrabold">Total Amount:</span>
+                            <span class="text-blue-600 font-black">₹{{ amount }}.00</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <button id="rzp-button1"
-                class="w-full mt-8 bg-gradient-to-r from-blue-700 to-blue-600 text-white font-bold py-4 rounded-2xl
-                       shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-1 active:scale-95
-                       transition duration-300 flex items-center justify-center gap-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                <span>Pay Securely</span>
-            </button>
+            <!-- Tabs selector for Payment Method -->
+            <div class="mt-6 border-b border-slate-100 flex gap-4">
+                <button id="tab-upi" onclick="switchTab('upi')" class="flex-1 pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 outline-none transition-all">
+                    UPI ID / Number
+                </button>
+                <button id="tab-qr" onclick="switchTab('qr')" class="flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-slate-600 outline-none transition-all">
+                    Scan QR Code
+                </button>
+            </div>
 
+            <!-- Tab 1: UPI ID / Mobile Number Form -->
+            <div id="pane-upi" class="mt-6 space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">UPI ID or Mobile Number</label>
+                    <input type="text" id="upiInput" placeholder="e.g. 9876543210@upi or 9876543210" 
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium">
+                </div>
+                <button onclick="submitMockPayment('upi')"
+                    class="w-full bg-gradient-to-r from-blue-700 to-blue-600 text-white font-bold py-4 rounded-2xl
+                           shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:scale-95
+                           transition duration-300 flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span>Pay Securely</span>
+                </button>
+            </div>
+
+            <!-- Tab 2: Scan QR Code -->
+            <div id="pane-qr" class="mt-6 space-y-5 hidden flex flex-col items-center">
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm inline-block">
+                    <!-- Dynamic UPI QR code generated from api.qrserver.com -->
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=medicare@bank%26pn=Medicare%26am={{ amount }}%26cu=INR" 
+                         alt="UPI QR Code" class="w-48 h-48 block">
+                </div>
+                
+                <p class="text-xs text-slate-500 font-medium text-center px-4 leading-relaxed">
+                    Scan this QR code using any UPI App (GPay, PhonePe, Paytm, BHIM) to pay <span class="font-bold text-slate-700">₹{{ amount }}.00</span>
+                </p>
+
+                <button onclick="submitMockPayment('qr')"
+                    class="w-full bg-gradient-to-r from-blue-700 to-blue-600 text-white font-bold py-4 rounded-2xl
+                           shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:scale-95
+                           transition duration-300 flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>I have Scanned &amp; Paid</span>
+                </button>
+            </div>
+
+            <!-- SSL Secure Footer -->
             <div class="mt-8 flex items-center justify-center gap-4 border-t border-slate-50 pt-6">
                 <div class="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"></path></svg>
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"></path>
+                    </svg>
                     SSL Secured
                 </div>
                 <div class="h-4 w-px bg-slate-200"></div>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" class="h-3 opacity-50 grayscale hover:grayscale-0 transition cursor-help">
+                <div class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                    UPI Unified Gateway
+                </div>
             </div>
+
         </div>
     </div>
 </div>
+
+<script>
+function switchTab(type) {
+    const tabUpi = document.getElementById('tab-upi');
+    const tabQr = document.getElementById('tab-qr');
+    const paneUpi = document.getElementById('pane-upi');
+    const paneQr = document.getElementById('pane-qr');
+
+    if (type === 'upi') {
+        tabUpi.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 outline-none transition-all";
+        tabQr.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-slate-600 outline-none transition-all";
+        paneUpi.classList.remove('hidden');
+        paneQr.classList.add('hidden');
+    } else {
+        tabQr.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 outline-none transition-all";
+        tabUpi.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-gray-400 hover:text-slate-600 outline-none transition-all";
+        paneQr.classList.remove('hidden');
+        paneUpi.classList.add('hidden');
+    }
+}
+
+function submitMockPayment(method) {
+    if (method === 'upi') {
+        const upiVal = document.getElementById('upiInput').value.trim();
+        if (!upiVal) {
+            alert("Please enter your UPI ID or Mobile Number!");
+            return;
+        }
+    }
+
+    // Generate random mock payment ID
+    const randomPayId = "pay_mock_" + Math.random().toString(36).substring(2, 12);
+    
+    // Redirect to success endpoint
+    const successUrl = "{% url 'successful_payment' %}";
+    const params = `?payment_id=${randomPayId}&order_id={{ order_id }}&doctor_id={{ doctor.id }}&appointment_id={{ appointment_id }}`;
+    
+    window.location.href = successUrl + params;
+}
+</script>
 
 <style>
 @keyframes blob {
@@ -81,60 +170,4 @@
 .animate-blob { animation: blob 7s infinite; }
 .animation-delay-2000 { animation-delay: 2s; }
 </style>
-
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    var options = {
-        key: "{{ razorpay_key }}",
-        amount: "{{ amount }}",
-        currency: "INR",
-        order_id: "{{ order_id }}",
-        appointment_id: "{{ appointment_id }}",
-        name: "MediCare",
-        description: "Doctor Appointment Fee",
-
-        handler: function (response) {
-
-            console.log("Payment Success Triggered");
-
-            var appointmentDate = document.getElementById("appointmentDate")?.value;
-            var appointmentTime = document.getElementById("appointmentTime")?.value;
-
-            var redirectUrl = "/successfull/?payment_id="
-                + response.razorpay_payment_id
-                + "&order_id=" + response.razorpay_order_id
-                + "&doctor_id={{ doctor.id }}"
-                + "&appointment_id={{ appointment_id }}"
-                + "&date=" + encodeURIComponent(appointmentDate || "")
-                + "&time=" + encodeURIComponent(appointmentTime || "");
-
-            console.log("Redirecting to:", redirectUrl);
-
-            window.location.href = redirectUrl;
-        },
-
-        modal: {
-            ondismiss: function () {
-                console.log("Payment popup closed");
-            }
-        },
-
-        theme: {
-            color: "#2563eb"
-        }
-    };
-
-    var rzp1 = new Razorpay(options);
-
-    document.getElementById("rzp-button1").onclick = function (e) {
-        e.preventDefault();
-        rzp1.open();
-    };
-
-});
-</script>
-
-
 {% endblock %}

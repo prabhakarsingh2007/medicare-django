@@ -1,7 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from core.models import Specialist, Hospital
+from doctors.models import Doctor
+
 
 def get_current_hospital(request):
     selected_slug = request.GET.get("hospital")
@@ -45,6 +47,32 @@ def home(request):
         "specialists": specialists,
         "hospitals": hospitals,
         "current_hospital": current_hospital,
+    })
+
+
+def select_hospital(request, slug):
+    """Patient selects a hospital — saves in session, redirects to home."""
+    try:
+        hospital = get_object_or_404(Hospital, slug=slug, is_active=True)
+        request.session["hospital_id"] = hospital.id
+    except Exception:
+        pass
+    return redirect("home")
+
+
+def hospital_detail(request, slug):
+    """Public page for a single hospital — shows info, doctors, specialists."""
+    hospital = get_object_or_404(Hospital, slug=slug, is_active=True)
+    doctors = Doctor.objects.filter(hospital=hospital).select_related('specialist').order_by('specialist__name', 'name')
+    specialists = Specialist.objects.filter(hospital=hospital).order_by('name')
+    hospitals = list(Hospital.objects.filter(is_active=True).order_by("name"))
+
+    return render(request, "core/hospital_detail.html", {
+        "hospital": hospital,
+        "doctors": doctors,
+        "specialists": specialists,
+        "hospitals": hospitals,
+        "current_hospital": hospital,
     })
 
 

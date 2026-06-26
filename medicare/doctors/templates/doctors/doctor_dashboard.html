@@ -121,6 +121,9 @@
                             {% if appointment.status != 'Cancelled' and appointment.status != 'Completed' %}
                             <a href="{% url 'doctor_reschedule_appointment' id=appointment.id %}" class="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 transition">Reschedule</a>
                             {% endif %}
+                            {% if appointment.user.patient %}
+                            <a href="{% url 'doctor_ehr_list' patient_id=appointment.user.patient.id %}" class="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition">View/Add EHR</a>
+                            {% endif %}
                     </div>
                 </div>
                 {% empty %}

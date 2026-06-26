@@ -19,6 +19,7 @@ from core.security_utils import is_strong_password, PASSWORD_RULE_TEXT
 from core.activity import log_activity
 from core.forms import HospitalForm, SpecialistForm
 from doctors.forms import DoctorForm
+from accounts.forms import HospitalAdminProfileForm
 
 
 def is_hospital_admin_or_superuser(user):
@@ -232,17 +233,6 @@ def add_doctor(request):
         hospitals = hospitals.filter(id=admin_hospital.id)
         specialists = specialists.filter(hospital=admin_hospital)
 
-    # Legacy manual validation kept for reference/safety during conversion:
-    # if request.method == "POST":
-    #     name = (request.POST.get("name") or "").strip()
-    #     photo = request.FILES.get("photo")
-    #     qualification = (request.POST.get("qualification") or "").strip()
-    #     specialist_id = request.POST.get("specialist")
-    #     experience = (request.POST.get("experience") or "").strip()
-    #     username = (request.POST.get("username") or "").strip()
-    #     password = request.POST.get("password") or ""
-    #     hospital_id = request.POST.get("hospital")
-
     if request.method == "POST":
         post_data = request.POST.copy()
         if admin_hospital:
@@ -406,16 +396,6 @@ def add_specialist(request):
     if admin_hospital:
         hospitals = hospitals.filter(id=admin_hospital.id)
 
-    # Legacy manual parsing kept for reference/safety during conversion:
-    # if request.method == "POST":
-    #     name = request.POST.get("name")
-    #     icon = request.FILES.get("icon")
-    #     hospital_id = request.POST.get("hospital")
-    #     if admin_hospital: hospital = admin_hospital
-    #     elif not hospital_id: return redirect("add_specialist")
-    #     else: hospital = get_object_or_404(Hospital, id=hospital_id)
-    #     Specialist.objects.create(hospital=hospital, name=name, icon=icon)
-
     if request.method == "POST":
         form = SpecialistForm(request.POST, request.FILES)
         if form.is_valid():
@@ -504,13 +484,6 @@ def add_hospital(request):
         messages.error(request, "Only super admin can add hospitals")
         return redirect("admin-dashboard")
 
-    # Legacy manual parsing kept for reference/safety during conversion:
-    # if request.method == "POST":
-    #     name = (request.POST.get("name") or "").strip()
-    #     address = (request.POST.get("address") or "").strip()
-    #     phone = (request.POST.get("phone") or "").strip()
-    #     email = (request.POST.get("email") or "").strip().lower()
-
     if request.method == "POST":
         form = HospitalForm(request.POST)
         if form.is_valid():
@@ -558,6 +531,61 @@ def delete_hospital(request, pk):
 
 
 @hospital_admin_required
+def edit_hospital(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, "Only super admin can edit hospitals")
+        return redirect("admin-dashboard")
+
+    hospital = get_object_or_404(Hospital, pk=pk)
+
+    if request.method == "POST":
+        form = HospitalForm(request.POST, instance=hospital)
+        if form.is_valid():
+            form.save()
+            log_activity(
+                actor=request.user,
+                action="hospital_updated",
+                target_type="hospital",
+                target_id=str(hospital.id),
+                description=f"Hospital updated: {hospital.name}",
+            )
+            messages.success(request, "Hospital updated successfully")
+            return redirect("view_hospital")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.capitalize()}: {error}")
+    else:
+        form = HospitalForm(instance=hospital)
+
+    return render(request, "dashboard/edit_hospital.html", {
+        "form": form,
+        "hospital": hospital,
+    })
+
+
+@hospital_admin_required
+def toggle_hospital_status(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, "Only super admin can toggle hospital status")
+        return redirect("admin-dashboard")
+
+    hospital = get_object_or_404(Hospital, pk=pk)
+    hospital.is_active = not hospital.is_active
+    hospital.save(update_fields=['is_active'])
+    status_text = "activated" if hospital.is_active else "deactivated"
+    log_activity(
+        actor=request.user,
+        action="hospital_status_changed",
+        target_type="hospital",
+        target_id=str(hospital.id),
+        description=f"Hospital {status_text}: {hospital.name}",
+    )
+    messages.success(request, f"Hospital {status_text} successfully")
+    return redirect('view_hospital')
+
+
+@hospital_admin_required
 def add_hospital_admin(request):
     if not request.user.is_superuser:
         messages.error(request, "Only super admin can create hospital admins")
@@ -566,52 +594,48 @@ def add_hospital_admin(request):
     hospitals = Hospital.objects.filter(is_active=True).order_by('name')
 
     if request.method == "POST":
-        full_name = (request.POST.get("full_name") or "").strip()
-        username = (request.POST.get("username") or "").strip()
-        password = request.POST.get("password") or ""
-        email = (request.POST.get("email") or "").strip().lower()
-        hospital_id = request.POST.get("hospital")
+        form = HospitalAdminProfileForm(request.POST)
+        if form.is_valid():
+            try:
+                user = User.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    password=form.cleaned_data['password'],
+                    email=form.cleaned_data['email'],
+                    first_name=form.cleaned_data['full_name'],
+                )
+                user.is_staff = True
+                user.save()
 
-        if not all([full_name, username, password, hospital_id]):
-            messages.error(request, "All required fields must be filled")
-            return redirect("add_hospital_admin")
+                profile = form.save(commit=False)
+                profile.user = user
+                profile.is_active = True
+                profile.save()
 
-        if not is_strong_password(password):
-            messages.error(request, PASSWORD_RULE_TEXT)
-            return redirect("add_hospital_admin")
+                log_activity(
+                    actor=request.user,
+                    action="hospital_admin_created",
+                    target_type="hospital_admin",
+                    target_id=user.username,
+                    description=f"Hospital admin created for {profile.hospital.name}",
+                    extra_data={"hospital_id": profile.hospital.id},
+                )
+                messages.success(request, "Hospital admin created successfully")
+                return redirect("view_hospital_admins")
+            except Exception as exc:
+                messages.error(request, f"Unable to create hospital admin: {exc}")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.capitalize()}: {error}")
+            for error in form.non_field_errors():
+                messages.error(request, error)
+    else:
+        form = HospitalAdminProfileForm()
 
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists")
-            return redirect("add_hospital_admin")
-
-        if email and User.objects.filter(email=email).exists():
-            messages.error(request, "Email already exists")
-            return redirect("add_hospital_admin")
-
-        hospital = get_object_or_404(Hospital, id=hospital_id)
-
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            first_name=full_name,
-        )
-        user.is_staff = True
-        user.save()
-
-        HospitalAdminProfile.objects.create(user=user, hospital=hospital, is_active=True)
-        log_activity(
-            actor=request.user,
-            action="hospital_admin_created",
-            target_type="hospital_admin",
-            target_id=username,
-            description=f"Hospital admin created for {hospital.name}",
-            extra_data={"hospital_id": hospital.id},
-        )
-        messages.success(request, "Hospital admin created successfully")
-        return redirect("view_hospital_admins")
-
-    return render(request, "dashboard/add_hospital_admin.html", {"hospitals": hospitals})
+    return render(request, "dashboard/add_hospital_admin.html", {
+        "form": form,
+        "hospitals": hospitals,
+    })
 
 
 @hospital_admin_required
@@ -687,6 +711,11 @@ def reset_hospital_admin_password(request, pk):
 
 @hospital_admin_required
 def change_admin_password(request):
+    # Only superadmin can change password — hospital admins are blocked
+    if not request.user.is_superuser:
+        messages.error(request, "You are not allowed to change your password. Contact the super admin.")
+        return redirect("admin-dashboard")
+
     if request.method == "POST":
         current_password = request.POST.get("current_password") or ""
         new_password = request.POST.get("new_password") or ""

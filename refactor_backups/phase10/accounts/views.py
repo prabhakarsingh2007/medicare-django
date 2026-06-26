@@ -18,7 +18,6 @@ from doctors.models import Doctor
 from notifications.notifications import send_email_notification
 from core.activity import log_activity
 from core.views import get_current_hospital
-from accounts.forms import PatientProfileForm, PatientProfileCompleteForm
 
 
 def is_valid_indian_phone(phone):
@@ -322,38 +321,59 @@ def patient_profile(request):
     )
 
     if request.method == "POST":
-        form = PatientProfileForm(request.POST, request.FILES, instance=patient)
-        if form.is_valid():
-            patient = form.save(commit=False)
-            patient.hospital = patient.hospital or current_hospital
-            
-            full_name = form.cleaned_data['full_name']
-            patient.name = full_name
-            patient.email = form.cleaned_data['email']
-            patient.save()
+        full_name = (request.POST.get("full_name") or "").strip()
+        email = (request.POST.get("email") or "").strip().lower()
+        phone = (request.POST.get("phone") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        age = (request.POST.get("age") or "").strip()
+        date_of_birth = request.POST.get("date_of_birth")
+        gender = request.POST.get("gender")
+        profile_pic = request.FILES.get("profile_pic")
 
-            name_parts = full_name.split(" ", 1)
-            request.user.first_name = name_parts[0]
-            request.user.last_name = name_parts[1] if len(name_parts) > 1 else ""
-            request.user.email = form.cleaned_data['email']
-            request.user.save()
-
-            messages.success(request, "Profile updated successfully")
+        if not full_name:
+            messages.error(request, "Full name is required")
             return redirect("patient_profile")
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field.capitalize()}: {error}")
-            for error in form.non_field_errors():
-                messages.error(request, error)
-    else:
-        form = PatientProfileForm(instance=patient, initial={
-            'full_name': patient.name,
-            'email': patient.email,
-        })
+
+        if email and not is_valid_email_address(email):
+            messages.error(request, "Please enter a valid email address")
+            return redirect("patient_profile")
+
+        if phone and not re.fullmatch(r"\d{10,15}", phone):
+            messages.error(request, "Phone number should be 10 to 15 digits")
+            return redirect("patient_profile")
+
+        age_value = None
+        if age:
+            try:
+                age_value = int(age)
+                if age_value <= 0 or age_value > 130:
+                    raise ValueError
+            except ValueError:
+                messages.error(request, "Please enter a valid age")
+                return redirect("patient_profile")
+
+        name_parts = full_name.split(" ", 1)
+        request.user.first_name = name_parts[0]
+        request.user.last_name = name_parts[1] if len(name_parts) > 1 else ""
+        request.user.email = email
+        request.user.save()
+
+        patient.name = full_name
+        patient.email = email
+        patient.hospital = patient.hospital or current_hospital
+        patient.phone = phone or None
+        patient.address = address or None
+        patient.age = age_value
+        patient.date_of_birth = date_of_birth or None
+        patient.gender = gender or None
+        if profile_pic:
+            patient.profile_pic = profile_pic
+        patient.save()
+
+        messages.success(request, "Profile updated successfully")
+        return redirect("patient_profile")
 
     return render(request, "accounts/patient_profile.html", {
-        "form": form,
         "user": request.user,
         "patient": patient,
     })
@@ -368,24 +388,36 @@ def complete_profile_view(request):
             "email": request.user.email,
         }
     )
-
-
+    
     if request.method == "POST":
-        form = PatientProfileCompleteForm(request.POST, instance=patient)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Profile complete. Welcome to your dashboard!")
-            return redirect('patient_dashboard')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, error)
-            for error in form.non_field_errors():
-                messages.error(request, error)
-    else:
-        form = PatientProfileCompleteForm(instance=patient)
+        phone = (request.POST.get("phone") or "").strip()
+        address = (request.POST.get("address") or "").strip()
+        age = (request.POST.get("age") or "").strip()
+        gender = request.POST.get("gender")
         
-    return render(request, "accounts/complete_profile.html", {
-        "form": form,
-        "patient": patient,
-    })
+        if not all([phone, address, age, gender]):
+            messages.error(request, "All fields are required to complete profile.")
+            return render(request, "accounts/complete_profile.html", {"patient": patient})
+            
+        if phone and not re.fullmatch(r"\d{10,15}", phone):
+            messages.error(request, "Phone number should be 10 to 15 digits.")
+            return render(request, "accounts/complete_profile.html", {"patient": patient})
+            
+        try:
+            age_value = int(age)
+            if age_value <= 0 or age_value > 130:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "Please enter a valid age.")
+            return render(request, "accounts/complete_profile.html", {"patient": patient})
+            
+        patient.phone = phone
+        patient.address = address
+        patient.age = age_value
+        patient.gender = gender
+        patient.save()
+        
+        messages.success(request, "Profile complete. Welcome to your dashboard!")
+        return redirect('patient_dashboard')
+        
+    return render(request, "accounts/complete_profile.html", {"patient": patient})

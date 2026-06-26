@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'notifications',
     'pharmacy',
     'pathology',
+    'ehr',
 ]
 
 MIDDLEWARE = [
@@ -113,9 +114,52 @@ WSGI_APPLICATION = f'{PROJECT_PACKAGE}.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///db.sqlite3')
-}
+DATABASE_URL = os.getenv('DATABASE_URL')
+DB_HOST = os.getenv('DB_HOST')
+
+if DATABASE_URL or DB_HOST:
+    if DATABASE_URL:
+        # dj-database-url handles connection string parsing (Render & Railway compatible)
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=int(os.getenv('DATABASE_CONN_MAX_AGE', 600)),
+                ssl_require=not DEBUG
+            )
+        }
+    else:
+        # Support separate environment variables
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME'),
+                'USER': os.getenv('DB_USER'),
+                'PASSWORD': os.getenv('DB_PASSWORD'),
+                'HOST': DB_HOST,
+                'PORT': os.getenv('DB_PORT', '5432'),
+                'CONN_MAX_AGE': int(os.getenv('DATABASE_CONN_MAX_AGE', 600)),
+            }
+        }
+    
+    # Configure connection timeout and SSL settings
+    db_config = DATABASES['default']
+    if 'OPTIONS' not in db_config:
+        db_config['OPTIONS'] = {}
+    
+    # Set connection timeout (default to 10 seconds)
+    db_config['OPTIONS']['connect_timeout'] = int(os.getenv('DATABASE_CONNECT_TIMEOUT', 10))
+    
+    # Force SSL mode require in production deployments only
+    if not DEBUG:
+        db_config['OPTIONS']['sslmode'] = os.getenv('DATABASE_SSL_MODE', 'require')
+else:
+    # SQLite fallback for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 # razopy key_id 
 
 

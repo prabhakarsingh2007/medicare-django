@@ -1,4 +1,5 @@
 from django.urls import path
+# pyrefly: ignore [missing-import]
 from .views import (
     book_appointment,
     get_booked_slots,

@@ -7,7 +7,10 @@
             <h1 class="text-2xl font-black text-slate-800">Hospitals</h1>
             <p class="text-slate-500 text-sm">Manage all hospital branches.</p>
         </div>
-        <a href="{% url 'add_hospital' %}" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition">Add Hospital</a>
+        <a href="{% url 'add_hospital' %}" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Hospital
+        </a>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -18,28 +21,53 @@
                         <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500">Hospital</th>
                         <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500">Contact</th>
                         <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500">Address</th>
-                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Action</th>
+                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Status</th>
+                        <th class="p-4 text-xs font-black uppercase tracking-widest text-slate-500 text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for h in hospitals %}
-                    <tr class="hover:bg-slate-50">
+                    <tr class="hover:bg-slate-50 transition">
                         <td class="p-4">
                             <p class="font-bold text-slate-800">{{ h.name }}</p>
-                            <p class="text-xs text-slate-400">/{{ h.slug }}</p>
+                            <p class="text-xs text-slate-400 font-mono">/{{ h.slug }}</p>
                         </td>
                         <td class="p-4 text-sm text-slate-600">
-                            <p>{{ h.phone|default:"-" }}</p>
-                            <p>{{ h.email|default:"-" }}</p>
+                            <p>📞 {{ h.phone|default:"—" }}</p>
+                            <p>✉️ {{ h.email|default:"—" }}</p>
                         </td>
-                        <td class="p-4 text-sm text-slate-600">{{ h.address|default:"-" }}</td>
+                        <td class="p-4 text-sm text-slate-600 max-w-xs">{{ h.address|default:"—" }}</td>
                         <td class="p-4 text-center">
-                            <a href="{% url 'delete_hospital' pk=h.id %}" class="text-red-600 text-sm font-bold hover:text-red-700">Delete</a>
+                            <a href="{% url 'toggle_hospital_status' pk=h.id %}"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition
+                                      {% if h.is_active %}bg-green-100 text-green-700 hover:bg-green-200{% else %}bg-slate-100 text-slate-500 hover:bg-slate-200{% endif %}">
+                                <span class="w-2 h-2 rounded-full {% if h.is_active %}bg-green-500{% else %}bg-slate-400{% endif %}"></span>
+                                {% if h.is_active %}Active{% else %}Inactive{% endif %}
+                            </a>
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center justify-center gap-3">
+                                <a href="{% url 'edit_hospital' pk=h.id %}"
+                                   class="text-blue-600 text-sm font-bold hover:text-blue-800 transition">Edit</a>
+                                <span class="text-slate-200">|</span>
+                                <a href="{% url 'hospital_detail' slug=h.slug %}" target="_blank"
+                                   class="text-slate-500 text-sm font-bold hover:text-slate-800 transition">View</a>
+                                <span class="text-slate-200">|</span>
+                                <a href="{% url 'delete_hospital' pk=h.id %}"
+                                   onclick="return confirm('Delete {{ h.name }}? This cannot be undone.')"
+                                   class="text-red-600 text-sm font-bold hover:text-red-800 transition">Delete</a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="p-12 text-center text-slate-400">No hospitals found. Add your first hospital.</td>
+                        <td colspan="5" class="p-16 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <span class="text-5xl">🏥</span>
+                                <p class="text-slate-400 font-semibold">No hospitals found.</p>
+                                <a href="{% url 'add_hospital' %}" class="text-blue-600 font-bold hover:underline">Add your first hospital →</a>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

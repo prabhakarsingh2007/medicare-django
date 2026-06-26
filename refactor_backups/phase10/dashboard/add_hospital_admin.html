@@ -13,9 +13,9 @@
         <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hospital</label>
             <select name="hospital" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
-                <option value="" disabled {% if not form.hospital.value %}selected{% endif %}>Select hospital</option>
+                <option value="" disabled selected>Select hospital</option>
                 {% for h in hospitals %}
-                <option value="{{ h.id }}" {% if form.hospital.value|stringformat:"s" == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                <option value="{{ h.id }}">{{ h.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -23,15 +23,15 @@
         <div class="grid md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-                <input type="text" name="full_name" value="{{ form.full_name.value|default:'' }}" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                <input type="text" name="full_name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
-                <input type="text" name="username" value="{{ form.username.value|default:'' }}" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                <input type="text" name="username" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email (optional)</label>
-                <input type="email" name="email" value="{{ form.email.value|default:'' }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                <input type="email" name="email" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>

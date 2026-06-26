@@ -27,7 +27,7 @@ def doctor_dashboard(request):
     if doctor.hospital_id:
         request.session["hospital_id"] = doctor.hospital_id
 
-    appointments = Appointment.objects.filter(doctor=doctor).order_by('-date', '-time')
+    appointments = Appointment.objects.filter(doctor=doctor).select_related('user__patient').order_by('-date', '-time')
 
     return render(request, 'doctors/doctor_dashboard.html', {
         "doctor": doctor,
@@ -121,11 +121,9 @@ def doctor_reschedule_appointment(request, id):
 
 
 def doctor_profile(request, slug):
-    current_hospital = get_current_hospital(request)
-    doctor_qs = Doctor.objects.filter(slug=slug)
-    if current_hospital:
-        doctor_qs = doctor_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
-    doctor = get_object_or_404(doctor_qs)
+    doctor = get_object_or_404(Doctor, slug=slug)
+    if doctor.hospital:
+        request.session["hospital_id"] = doctor.hospital.id
     return render(request, "doctors/doctor_profile.html", {"doctor": doctor})
 
 

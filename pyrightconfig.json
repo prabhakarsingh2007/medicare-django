@@ -1,0 +1,22 @@
+{
+  "pythonPath": ".venv/Scripts/python.exe",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "include": [
+    "medicare"
+  ],
+  "exclude": [
+    ".venv",
+    "**/migrations",
+    "refactor_backups",
+    "server",
+    "**/__pycache__"
+  ],
+  "extraPaths": [
+    "medicare"
+  ],
+  "typeCheckingMode": "off",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}

@@ -1,8 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.conf import settings
-import razorpay
 
 from doctors.models import Doctor
 from appointments.models import Appointment
@@ -10,10 +8,8 @@ from accounts.models import Patient
 from payments.models import Payment
 from accounts.views import is_patient_profile_complete
 
-client = razorpay.Client(
-    auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-)
 
+from django.utils.crypto import get_random_string
 
 @login_required(login_url='login')
 def payment(request, id):
@@ -29,18 +25,13 @@ def payment(request, id):
         ).order_by('-created_at').first()
 
     fees = doctor.fees if doctor.fees else 500
-
-    order = client.order.create({
-        "amount": int(fees) * 100,
-        "currency": "INR",
-        "payment_capture": 1
-    })
+    amount = fees
+    order_id = "mock_ord_" + get_random_string(10).lower()
 
     return render(request, "payments/payment.html", {
         "doctor": doctor,
-        "order_id": order["id"],
-        "amount": order["amount"],
-        "razorpay_key": settings.RAZORPAY_KEY_ID,
+        "order_id": order_id,
+        "amount": amount,
         "appointment_id": appointment.id if appointment else None
     })
 
@@ -74,8 +65,9 @@ def successfull_payment(request):
     appointment.status = "Pending"
     appointment.save()
 
+    payment = None
     if payment_id:
-        Payment.objects.get_or_create(
+        payment, _ = Payment.objects.get_or_create(
             payment_id=payment_id,
             defaults={
                 'appointment': appointment,
@@ -89,4 +81,10 @@ def successfull_payment(request):
     messages.success(request, "Appointment booked successfully.")
     if not is_patient_profile_complete(patient):
         messages.warning(request, "Please complete your profile details for faster future bookings.")
-    return redirect("patient_dashboard")
+
+    return render(request, "payments/success.html", {
+        "appointment": appointment,
+        "payment": payment,
+        "doctor": doctor,
+        "amount": doctor.fees if doctor.fees else 500,
+    })
