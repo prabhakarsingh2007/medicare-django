@@ -20,6 +20,7 @@ from .views import (
     change_admin_password,
     view_hospital,
     delete_hospital,
+    payment_history,
 )
 
 urlpatterns = [
@@ -43,4 +44,5 @@ urlpatterns = [
     path("admin/change_password/", change_admin_password, name="change_admin_password"),
     path("admin/view_hospital/", view_hospital, name="view_hospital"),
     path("delete_hospital/<int:pk>/", delete_hospital, name='delete_hospital'),
+    path("admin/payment_history/", payment_history, name="payment_history"),
 ]

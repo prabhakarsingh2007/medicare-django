@@ -749,3 +749,53 @@ def change_admin_password(request):
         return redirect("admin-dashboard")
 
     return render(request, "dashboard/change_admin_password.html")
+
+
+@hospital_admin_required
+def payment_history(request):
+    admin_hospital = get_admin_hospital(request)
+
+    # Base queryset — filter by hospital if not superadmin
+    payments_qs = Payment.objects.select_related(
+        'appointment', 'appointment__doctor', 'appointment__hospital', 'user'
+    ).order_by('-created_at')
+
+    if admin_hospital:
+        payments_qs = payments_qs.filter(appointment__hospital=admin_hospital)
+
+    # Search filter
+    search = request.GET.get('search', '').strip()
+    if search:
+        payments_qs = payments_qs.filter(
+            Q(payment_id__icontains=search) |
+            Q(appointment__name__icontains=search) |
+            Q(appointment__doctor__name__icontains=search)
+        )
+
+    # Date filter
+    date_filter = request.GET.get('date_filter', '')
+    if date_filter:
+        payments_qs = payments_qs.filter(created_at__date=date_filter)
+
+    # Status filter
+    status_filter = request.GET.get('status_filter', '')
+    if status_filter == 'paid':
+        payments_qs = payments_qs.filter(status=True)
+    elif status_filter == 'pending':
+        payments_qs = payments_qs.filter(status=False)
+
+    # Revenue summary
+    total_revenue = payments_qs.filter(status=True).aggregate(total=Sum('amount'))['total'] or 0
+    total_paid    = payments_qs.filter(status=True).count()
+    total_pending = payments_qs.filter(status=False).count()
+
+    return render(request, "dashboard/payment_history.html", {
+        "payments": payments_qs,
+        "search": search,
+        "date_filter": date_filter,
+        "status_filter": status_filter,
+        "total_revenue": total_revenue,
+        "total_paid": total_paid,
+        "total_pending": total_pending,
+        "current_admin_hospital": admin_hospital,
+    })
