@@ -129,15 +129,22 @@ def doctor_profile(request, slug):
 
 def specialist_doctors(request, id):
     current_hospital = get_current_hospital(request)
+
+    # Find the specialist — if hospital is selected, only show that hospital's specialist
     specialist_qs = Specialist.objects.filter(id=id)
     if current_hospital:
-        specialist_qs = specialist_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+        specialist_qs = specialist_qs.filter(hospital=current_hospital)
     specialist = get_object_or_404(specialist_qs)
+
+    # Only show doctors from the selected hospital
     doctors = Doctor.objects.filter(specialist=specialist)
     if current_hospital:
-        doctors = doctors.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+        doctors = doctors.filter(hospital=current_hospital)
+    else:
+        doctors = doctors.all()
 
     return render(request, "doctors/doctors.html", {
         "specialist": specialist,
-        "doctors": doctors
+        "doctors": doctors,
+        "current_hospital": current_hospital,
     })

@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from core.models import Specialist, Hospital
 from doctors.models import Doctor
@@ -34,7 +33,8 @@ def home(request):
         specialists_qs = Specialist.objects.all()
 
         if current_hospital:
-            specialists_qs = specialists_qs.filter(Q(hospital=current_hospital) | Q(hospital__isnull=True))
+            # Only show departments/specialists of the selected hospital
+            specialists_qs = specialists_qs.filter(hospital=current_hospital)
 
         specialists = list(specialists_qs)
         hospitals = list(Hospital.objects.filter(is_active=True).order_by("name"))
