@@ -9,7 +9,7 @@ class DoctorForm(forms.ModelForm):
 
     class Meta:
         model = Doctor
-        fields = ['name', 'hospital', 'specialist', 'experience', 'qualification', 'image']
+        fields = ['name', 'hospital', 'specialist', 'experience', 'qualification', 'fees', 'image']
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()
@@ -28,6 +28,12 @@ class DoctorForm(forms.ModelForm):
         if experience is not None and experience < 0:
             raise forms.ValidationError("Experience must be a valid non-negative number.")
         return experience
+
+    def clean_fees(self):
+        fees = self.cleaned_data.get('fees')
+        if fees is not None and fees < 0:
+            raise forms.ValidationError("Consultation fee must be a valid non-negative number.")
+        return fees
 
     def clean(self):
         cleaned_data = super().clean()

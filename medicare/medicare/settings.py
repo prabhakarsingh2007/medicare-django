@@ -225,6 +225,8 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', f'Medicare <{EMAIL_HOST_USER}>')
 
+LOGIN_URL = 'login'
+
 # ==============================================================================
 # 🚨 CRITICAL: YOU MUST PASTE YOUR FAST2SMS API KEY BELOW TO SEND REAL SMS 🚨
 # ==============================================================================

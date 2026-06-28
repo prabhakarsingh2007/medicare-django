@@ -31,15 +31,21 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
+                        <div class="space-y-2 md:col-span-2">
                             <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
                             <input type="text" name="name" value="{{ doctor.name }}" required
                                 class="w-full px-6 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700">
                         </div>
 
-                        <div class="space-y-2 md:col-span-2">
+                        <div class="space-y-2">
                             <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Years of Experience</label>
                             <input type="number" name="experience" value="{{ doctor.experience }}" required
+                                class="w-full px-6 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Consultation Fee (Rs.)</label>
+                            <input type="number" name="fees" value="{{ doctor.fees|default:'' }}" required min="0"
                                 class="w-full px-6 py-4 bg-slate-50 border-0 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700">
                         </div>
                     </div>

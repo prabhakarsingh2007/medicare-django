@@ -317,6 +317,14 @@ def edit_doctor(request, pk):
         doctor.name = request.POST.get('name')
         doctor.experience = request.POST.get('experience')
         
+        fees_val = request.POST.get('fees')
+        if fees_val:
+            try:
+                doctor.fees = int(fees_val)
+            except ValueError:
+                messages.error(request, "Fees must be a valid integer number.")
+                return render(request, 'dashboard/edit_doctor.html', {'doctor': doctor})
+        
         if request.FILES.get('image'):
             doctor.image = request.FILES.get('image')
         
