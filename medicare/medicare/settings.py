@@ -1,8 +1,5 @@
 try:
-    try:
     import dj_database_url
-except ImportError:
-    dj_database_url = None
 except ImportError:
     dj_database_url = None
 
