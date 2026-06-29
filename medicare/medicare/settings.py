@@ -49,7 +49,12 @@ else:
     if DEBUG:
         ALLOWED_HOSTS = ['*']
     else:
-        raise ImproperlyConfigured("The ALLOWED_HOSTS environment variable is not set and is required in production.")
+        ALLOWED_HOSTS = []
+
+# Automatically whitelist Render external URL
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
