@@ -36,7 +36,7 @@
             <div class="absolute inset-0 bg-blue-200 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-300"></div>
             {% if doctor.image %}
               <img src="{{ doctor.image.url }}" alt="{{ doctor.name }}"
-                   onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/387/387561.png';"
+                   onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ doctor.name|urlencode }}&background=0D8ABC&color=fff&size=128';"
                    class="relative w-full h-full object-cover rounded-2xl shadow-inner border-2 border-white">
             {% else %}
               <div class="relative w-full h-full rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
