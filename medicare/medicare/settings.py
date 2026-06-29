@@ -269,6 +269,8 @@ SMS_GATEWAY_URL = os.getenv('SMS_GATEWAY_URL', '')
 SMS_GATEWAY_API_KEY = os.getenv('SMS_GATEWAY_API_KEY', '')
 SMS_GATEWAY_SENDER_ID = os.getenv('SMS_GATEWAY_SENDER_ID', 'MEDCARE')
 
+import tempfile
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -276,7 +278,7 @@ LOGGING = {
         'file': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'django_errors.log',
+            'filename': os.path.join(tempfile.gettempdir(), 'django_errors.log'),
         },
     },
     'loggers': {
@@ -287,6 +289,7 @@ LOGGING = {
         },
     },
 }
+
 
 
 

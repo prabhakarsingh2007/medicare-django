@@ -20,13 +20,16 @@ def check_media(request):
             lines.append(f"specialist Dir Contents: {os.listdir(spec_dir)}")
     return HttpResponse("<pre>" + "\n".join(lines) + "</pre>")
 
+import tempfile
+
 def check_logs(request):
-    log_path = settings.BASE_DIR / 'django_errors.log'
+    log_path = os.path.join(tempfile.gettempdir(), 'django_errors.log')
     if os.path.exists(log_path):
         with open(log_path, 'r', encoding='utf-8') as f:
             content = f.read()
         return HttpResponse("<pre>" + content + "</pre>")
     return HttpResponse("No logs found.")
+
 
 urlpatterns = [
     path('check-media/', check_media),
