@@ -269,4 +269,24 @@ SMS_GATEWAY_URL = os.getenv('SMS_GATEWAY_URL', '')
 SMS_GATEWAY_API_KEY = os.getenv('SMS_GATEWAY_API_KEY', '')
 SMS_GATEWAY_SENDER_ID = os.getenv('SMS_GATEWAY_SENDER_ID', 'MEDCARE')
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'django_errors.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
+
+
 
