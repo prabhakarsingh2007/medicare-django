@@ -3,8 +3,25 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
+from django.http import HttpResponse
+import os
+
+def check_media(request):
+    from django.conf import settings
+    lines = []
+    lines.append(f"Current Working Dir: {os.getcwd()}")
+    lines.append(f"MEDIA_ROOT: {settings.MEDIA_ROOT}")
+    lines.append(f"MEDIA_ROOT Exists: {os.path.exists(settings.MEDIA_ROOT)}")
+    if os.path.exists(settings.MEDIA_ROOT):
+        lines.append(f"MEDIA_ROOT Contents: {os.listdir(settings.MEDIA_ROOT)}")
+        spec_dir = os.path.join(settings.MEDIA_ROOT, 'specialist')
+        lines.append(f"specialist Dir Exists: {os.path.exists(spec_dir)}")
+        if os.path.exists(spec_dir):
+            lines.append(f"specialist Dir Contents: {os.listdir(spec_dir)}")
+    return HttpResponse("<pre>" + "\n".join(lines) + "</pre>")
 
 urlpatterns = [
+    path('check-media/', check_media),
     path('superadmin/', admin.site.urls),
     path("", include("core.urls")),
     path("", include("accounts.urls")),
@@ -15,4 +32,5 @@ urlpatterns = [
     path("", include("ehr.urls")),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
+
 
