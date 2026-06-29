@@ -19,7 +19,7 @@
                     <div class="flex items-center gap-6 mb-8 pb-6 border-b border-slate-50">
                         <div class="relative">
                             {% if doctor.image %}
-                                <img src="{{ doctor.image.url }}" class="w-24 h-24 rounded-3xl object-cover border-4 border-blue-50 shadow-md">
+                                <img src="{{ doctor.image.url }}" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/387/387561.png';" class="w-24 h-24 rounded-3xl object-cover border-4 border-blue-50 shadow-md">
                             {% else %}
                                 <div class="w-24 h-24 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-300">No Image</div>
                             {% endif %}
