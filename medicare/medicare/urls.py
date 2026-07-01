@@ -6,15 +6,6 @@ from django.views.static import serve
 from django.http import HttpResponse
 import os
 
-def check_live_traceback(request):
-    import tempfile
-    log_path = os.path.join(tempfile.gettempdir(), 'live_traceback.txt')
-    if os.path.exists(log_path):
-        with open(log_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return HttpResponse("<pre>" + content + "</pre>")
-    return HttpResponse("No tracebacks recorded.")
-
 def check_media(request):
     from django.conf import settings
     lines = []
@@ -27,12 +18,9 @@ def check_media(request):
         lines.append(f"specialist Dir Exists: {os.path.exists(spec_dir)}")
         if os.path.exists(spec_dir):
             lines.append(f"specialist Dir Contents: {os.listdir(spec_dir)}")
-def trigger_error(request):
-    raise ValueError("Diagnostic Test Error")
+    return HttpResponse("<pre>" + "\n".join(lines) + "</pre>")
 
 urlpatterns = [
-    path('trigger-error/', trigger_error),
-    path('check-errors/', check_live_traceback),
     path('check-media/', check_media),
     path('superadmin/', admin.site.urls),
     path("", include("core.urls")),

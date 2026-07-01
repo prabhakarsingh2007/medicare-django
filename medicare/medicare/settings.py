@@ -89,7 +89,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'accounts.middleware.TracebackMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
