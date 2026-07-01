@@ -89,7 +89,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'medicare.middleware.TracebackMiddleware',
+    'accounts.middleware.TracebackMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
