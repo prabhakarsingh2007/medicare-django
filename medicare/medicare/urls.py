@@ -6,6 +6,15 @@ from django.views.static import serve
 from django.http import HttpResponse
 import os
 
+def check_live_traceback(request):
+    import tempfile
+    log_path = os.path.join(tempfile.gettempdir(), 'live_traceback.txt')
+    if os.path.exists(log_path):
+        with open(log_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HttpResponse("<pre>" + content + "</pre>")
+    return HttpResponse("No tracebacks recorded.")
+
 def check_media(request):
     from django.conf import settings
     lines = []
@@ -21,6 +30,7 @@ def check_media(request):
     return HttpResponse("<pre>" + "\n".join(lines) + "</pre>")
 
 urlpatterns = [
+    path('check-errors/', check_live_traceback),
     path('check-media/', check_media),
     path('superadmin/', admin.site.urls),
     path("", include("core.urls")),
