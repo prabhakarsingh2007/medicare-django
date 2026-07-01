@@ -11,6 +11,19 @@ def send_email_notification(subject, message, recipient_list):
     if not recipients:
         return False
 
+    # Console fallback if SMTP credentials are not configured
+    host_user = getattr(settings, 'EMAIL_HOST_USER', '')
+    host_pass = getattr(settings, 'EMAIL_HOST_PASSWORD', '')
+    if not host_user or not host_pass:
+        print("\n" + "="*50)
+        print(" [EMAIL FALLBACK] SMTP Credentials not configured.")
+        print(f" Subject: {subject}")
+        print(f" Message: {message}")
+        print(f" Recipients: {recipients}")
+        print("="*50 + "\n")
+        logger.info("SMTP Credentials not configured. Printed email notification to console.")
+        return True
+
     try:
         send_mail(
             subject=subject,

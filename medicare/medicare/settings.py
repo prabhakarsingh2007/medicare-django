@@ -131,7 +131,7 @@ if DATABASE_URL or DB_HOST:
         DATABASES = {
             'default': dj_database_url.config(
                 default=DATABASE_URL,
-                conn_max_age=int(os.getenv('DATABASE_CONN_MAX_AGE', 600)),
+                conn_max_age=int(os.getenv('DATABASE_CONN_MAX_AGE', 0)),
                 ssl_require=not DEBUG
             )
         }
@@ -145,7 +145,7 @@ if DATABASE_URL or DB_HOST:
                 'PASSWORD': os.getenv('DB_PASSWORD'),
                 'HOST': DB_HOST,
                 'PORT': os.getenv('DB_PORT', '5432'),
-                'CONN_MAX_AGE': int(os.getenv('DATABASE_CONN_MAX_AGE', 600)),
+                'CONN_MAX_AGE': int(os.getenv('DATABASE_CONN_MAX_AGE', 0)),
             }
         }
     

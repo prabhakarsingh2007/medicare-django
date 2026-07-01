@@ -117,10 +117,12 @@ def register_view(request):
 
         subject = "Your MediCare OTP Code"
         body = f"Hello,\n\nYour login OTP is: {otp}\n\nThis code expires in 10 minutes."
-        send_email_notification(subject, body, [email])
-
-        messages.success(request, f"OTP sent to email {email}")
-        return redirect('verify_otp')
+        if send_email_notification(subject, body, [email]):
+            messages.success(request, f"OTP sent to email {email}")
+            return redirect('verify_otp')
+        else:
+            messages.error(request, "Failed to send OTP email. Please try again or contact administrator.")
+            return redirect('register')
 
     return render(request, 'accounts/register.html', {'next': request.GET.get('next', '')})
 
@@ -251,10 +253,12 @@ def login_view(request):
 
             subject = "Your MediCare OTP Code"
             body = f"Hello,\n\nYour login OTP is: {otp}\n\nThis code expires in 10 minutes."
-            send_email_notification(subject, body, [email])
-
-            messages.success(request, f"OTP sent to email {email}")
-            return redirect('verify_otp')
+            if send_email_notification(subject, body, [email]):
+                messages.success(request, f"OTP sent to email {email}")
+                return redirect('verify_otp')
+            else:
+                messages.error(request, "Failed to send OTP email. Please try again or contact administrator.")
+                return redirect('login')
 
         username = request.POST.get('username')
         password = request.POST.get('password')
