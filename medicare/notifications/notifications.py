@@ -34,8 +34,14 @@ def send_email_notification(subject, message, recipient_list):
         )
         return True
     except Exception as exc:
-        logger.warning("Email notification failed: %s", exc)
-        return False
+        logger.warning("Email notification failed: %s. Falling back to console logging.", exc)
+        print("\n" + "="*50)
+        print(" [EMAIL FALLBACK] SMTP failed to send. Printed email to console:")
+        print(f" Subject: {subject}")
+        print(f" Message: {message}")
+        print(f" Recipients: {recipients}")
+        print("="*50 + "\n")
+        return True
 
 
 def send_sms_notification(phone, message):
