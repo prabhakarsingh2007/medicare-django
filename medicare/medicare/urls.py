@@ -27,9 +27,11 @@ def check_media(request):
         lines.append(f"specialist Dir Exists: {os.path.exists(spec_dir)}")
         if os.path.exists(spec_dir):
             lines.append(f"specialist Dir Contents: {os.listdir(spec_dir)}")
-    return HttpResponse("<pre>" + "\n".join(lines) + "</pre>")
+def trigger_error(request):
+    raise ValueError("Diagnostic Test Error")
 
 urlpatterns = [
+    path('trigger-error/', trigger_error),
     path('check-errors/', check_live_traceback),
     path('check-media/', check_media),
     path('superadmin/', admin.site.urls),
