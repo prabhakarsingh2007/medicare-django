@@ -1,6 +1,18 @@
 {% extends "core/base.html" %}
 
 {% block content %}
+<!-- Hidden payment configuration for Javascript to read, preventing IDE script errors -->
+<div id="payment-config" 
+     style="display: none;" 
+     data-is-test="{{ is_test_mode|yesno:'true,false' }}" 
+     data-key="{{ razorpay_key }}" 
+     data-order-id="{{ order_id }}" 
+     data-amount-in-paise="{{ amount_in_paise }}"
+     data-doctor-id="{{ doctor.id }}"
+     data-appointment-id="{{ appointment_id }}"
+     data-success-url="{% url 'successful_payment' %}">
+</div>
+
 <div class="min-h-screen flex items-center justify-center bg-[#f8fafc] py-12 px-4 relative overflow-hidden">
     
     <!-- Decorative background elements -->
@@ -129,13 +141,25 @@
 
 {% if is_test_mode %}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endif %}
+
 <script>
+// Extract configuration parameters from the DOM to keep JS syntax fully clean of Django tags
+const configEl = document.getElementById('payment-config');
+const isTestMode = configEl.dataset.isTest === 'true';
+const razorpayKey = configEl.dataset.key;
+const orderId = configEl.dataset.orderId;
+const amountInPaise = configEl.dataset.amountInPaise;
+const doctorId = configEl.dataset.doctorId;
+const appointmentId = configEl.dataset.appointmentId;
+const successUrl = configEl.dataset.successUrl;
+
 function openRazorpayUPI(upiVal) {
     var options = {
-        key: "{{ razorpay_key }}",
-        amount: "{{ amount_in_paise }}",
+        key: razorpayKey,
+        amount: amountInPaise,
         currency: "INR",
-        order_id: "{{ order_id }}",
+        order_id: orderId,
         name: "MediCare",
         description: "Doctor Appointment Fee",
         prefill: {
@@ -143,8 +167,7 @@ function openRazorpayUPI(upiVal) {
             vpa: upiVal
         },
         handler: function (response) {
-            const successUrl = "{% url 'successful_payment' %}";
-            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || '{{ order_id }}'}&doctor_id={{ doctor.id }}&appointment_id={{ appointment_id }}`;
+            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || orderId}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
             window.location.href = successUrl + params;
         },
         modal: {
@@ -156,21 +179,20 @@ function openRazorpayUPI(upiVal) {
             color: "#2563eb"
         }
     };
-    var rzp = new Razorpay(options);
+    var rzp = new window.Razorpay(options);
     rzp.open();
 }
 
 function payWithOtherMethods() {
     var options = {
-        key: "{{ razorpay_key }}",
-        amount: "{{ amount_in_paise }}",
+        key: razorpayKey,
+        amount: amountInPaise,
         currency: "INR",
-        order_id: "{{ order_id }}",
+        order_id: orderId,
         name: "MediCare",
         description: "Doctor Appointment Fee",
         handler: function (response) {
-            const successUrl = "{% url 'successful_payment' %}";
-            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || '{{ order_id }}'}&doctor_id={{ doctor.id }}&appointment_id={{ appointment_id }}`;
+            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || orderId}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
             window.location.href = successUrl + params;
         },
         modal: {
@@ -182,13 +204,10 @@ function payWithOtherMethods() {
             color: "#2563eb"
         }
     };
-    var rzp = new Razorpay(options);
+    var rzp = new window.Razorpay(options);
     rzp.open();
 }
-</script>
-{% endif %}
 
-<script>
 function switchTab(type) {
     const tabUpi = document.getElementById('tab-upi');
     const tabQr = document.getElementById('tab-qr');
@@ -216,19 +235,17 @@ function submitMockPayment(method) {
             return;
         }
         
-        {% if is_test_mode %}
-        openRazorpayUPI(upiVal);
-        return;
-        {% endif %}
+        if (isTestMode) {
+            openRazorpayUPI(upiVal);
+            return;
+        }
     }
 
     // Generate random mock payment ID
     const randomPayId = "pay_mock_" + Math.random().toString(36).substring(2, 12);
     
     // Redirect to success endpoint
-    const successUrl = "{% url 'successful_payment' %}";
-    const params = `?payment_id=${randomPayId}&order_id={{ order_id }}&doctor_id={{ doctor.id }}&appointment_id={{ appointment_id }}`;
-    
+    const params = `?payment_id=${randomPayId}&order_id=${orderId}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
     window.location.href = successUrl + params;
 }
 </script>

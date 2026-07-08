@@ -37,8 +37,8 @@ def payment(request, id):
             client = razorpay.Client(
                 auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
             )
-            order = client.order.create({
-                "amount": int(fees) * 100,
+            order = client.order.create({  # type: ignore
+                "amount": fees * 100,
                 "currency": "INR",
                 "payment_capture": 1
             })
@@ -47,11 +47,11 @@ def payment(request, id):
         except Exception as e:
             # Fallback to mock if API fails
             order_id = "mock_ord_" + get_random_string(10).lower()
-            amount_in_paise = int(fees) * 100
+            amount_in_paise = fees * 100
             is_test_mode = False
     else:
         order_id = "mock_ord_" + get_random_string(10).lower()
-        amount_in_paise = int(fees) * 100
+        amount_in_paise = fees * 100
 
     return render(request, "payments/payment.html", {
         "doctor": doctor,
