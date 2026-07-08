@@ -104,8 +104,8 @@ RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 
 # Email / Notifications Settings
 EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
+EMAIL_PORT=465
+EMAIL_USE_SSL=True
 EMAIL_HOST_USER=your_email@gmail.com
 EMAIL_HOST_PASSWORD=your_app_password
 
@@ -165,11 +165,12 @@ Django is configured with standard output stream handling rather than traditiona
 - Prevents file write-locks when executing under multi-worker Gunicorn server configurations.
 - Directs python error tracebacks directly into the Render central logs panel.
 
-### 2. SMTP Blockages & The OTP Console Fallback
-In restricted cloud environments (such as Render's free tier, where outbound SMTP ports `25` or `587` are blocked by default), email dispatches will timeout. To resolve this:
-- **Fast Timeout (`EMAIL_TIMEOUT = 5`)**: The SMTP connection attempt is limited to 5 seconds to prevent Gunicorn workers from hanging and terminating (avoiding `502 Bad Gateway` errors).
-- **Log Fallback**: If email transmission times out or fails (e.g. invalid credentials or blocked ports), the application registers the event, **prints the OTP registration code directly to stdout (the Render logs stream)**, and reports success.
-- **How to log in during tests**: Simply check the service log stream on the Render Dashboard to retrieve the registration or login OTP.
+### 2. SMTP Setup & The OTP Console Fallback
+In restricted cloud environments (such as Render's free tier), outbound SMTP port 587 is blocked by default. To resolve this:
+- **Port 465 SSL configuration**: The application is configured to send emails using SSL on Port 465 by default, which is not blocked by Render and delivers OTP emails successfully.
+- **Fast Timeout (`EMAIL_TIMEOUT = 5`)**: The SMTP connection attempt is limited to 5 seconds to prevent Gunicorn workers from hanging.
+- **Log Fallback**: If email transmission still fails (e.g., due to incorrect or missing credentials), the system prints the OTP code directly to stdout (the Render logs stream) and reports success.
+- **How to log in during tests**: If SMTP credentials are not configured, check the service log stream on the Render Dashboard or local terminal console to retrieve the OTP.
 
 ### 3. Media Uploads & Cloudinary
 Since Render utilizes ephemeral filesystems where locally saved images are lost on server restarts:
