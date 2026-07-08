@@ -115,41 +115,11 @@ def book_appointment(request, slug):
                     'message': 'Appointment booked successfully. You can pay at the clinic.'
                 })
 
-            razorpay_key = getattr(settings, 'RAZORPAY_KEY_ID', '')
-            is_test_mode = razorpay_key.startswith('rzp_test_')
-
-            if is_test_mode:
-                try:
-                    import razorpay
-                    client = razorpay.Client(
-                        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-                    )
-                    order = client.order.create({  # type: ignore
-                        "amount": fees * 100,
-                        "currency": "INR",
-                        "payment_capture": 1
-                    })
-                    return JsonResponse({
-                        'success': True,
-                        'pay_required': True,
-                        'is_test_mode': True,
-                        'razorpay_key': razorpay_key,
-                        'amount_in_paise': order["amount"],
-                        'order_id': order["id"],
-                        'doctor_id': doctor.id,
-                        'appointment_id': appointment.id,
-                        'success_url': reverse('successful_payment')
-                    })
-                except Exception as e:
-                    # Fallback to redirecting to mock/payment_url if Razorpay SDK fails
-                    pass
-
             # Direct the user to the custom mock payment page
             payment_url = reverse('payment', kwargs={'id': doctor.id}) + f"?appointment_id={appointment.id}"
             return JsonResponse({
                 'success': True,
                 'pay_required': True,
-                'is_test_mode': False,
                 'redirect_url': payment_url
             })
 
