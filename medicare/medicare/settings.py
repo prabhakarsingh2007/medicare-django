@@ -1,7 +1,4 @@
-try:
-    import dj_database_url
-except ImportError:
-    dj_database_url = None
+import dj_database_url
 
 """
 Django settings for medicare project.
@@ -125,6 +122,9 @@ WSGI_APPLICATION = f'{PROJECT_PACKAGE}.wsgi.application'
 DATABASE_URL = os.getenv('DATABASE_URL')
 DB_HOST = os.getenv('DB_HOST')
 
+from typing import Any, Dict
+DATABASES: Dict[str, Any] = {}
+
 if DATABASE_URL or DB_HOST:
     if DATABASE_URL:
         # dj-database-url handles connection string parsing (Render & Railway compatible)
@@ -150,8 +150,8 @@ if DATABASE_URL or DB_HOST:
         }
     
     # Configure connection timeout and SSL settings
-    db_config = DATABASES['default']
-    if 'OPTIONS' not in db_config:
+    db_config: Dict[str, Any] = DATABASES['default']
+    if 'OPTIONS' not in db_config or not isinstance(db_config['OPTIONS'], dict):
         db_config['OPTIONS'] = {}
     
     # Set connection timeout (default to 10 seconds)
