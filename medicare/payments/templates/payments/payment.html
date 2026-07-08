@@ -157,7 +157,7 @@ const successUrl = configEl.dataset.successUrl;
 function openRazorpayUPI(upiVal) {
     var options = {
         key: razorpayKey,
-        amount: amountInPaise,
+        amount: parseInt(amountInPaise, 10),
         currency: "INR",
         order_id: orderId,
         name: "MediCare",
@@ -186,7 +186,7 @@ function openRazorpayUPI(upiVal) {
 function payWithOtherMethods() {
     var options = {
         key: razorpayKey,
-        amount: amountInPaise,
+        amount: parseInt(amountInPaise, 10),
         currency: "INR",
         order_id: orderId,
         name: "MediCare",
