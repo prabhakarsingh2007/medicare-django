@@ -248,6 +248,11 @@ function submitMockPayment(method) {
     const params = `?payment_id=${randomPayId}&order_id=${orderId}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
     window.location.href = successUrl + params;
 }
+
+// Automatically trigger the Razorpay popup on page load if in Test Mode
+if (isTestMode) {
+    payWithOtherMethods();
+}
 </script>
 
 <style>
