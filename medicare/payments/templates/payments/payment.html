@@ -77,6 +77,13 @@
                     </svg>
                     <span>Pay Securely</span>
                 </button>
+                {% if is_test_mode %}
+                <div class="text-center mt-2">
+                    <button type="button" onclick="payWithOtherMethods()" class="text-blue-600 hover:text-blue-800 text-xs font-bold hover:underline transition">
+                        Other Payment Methods (Card, Net Banking, Wallet, etc.)
+                    </button>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Tab 2: Scan QR Code -->
@@ -120,6 +127,67 @@
     </div>
 </div>
 
+{% if is_test_mode %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function openRazorpayUPI(upiVal) {
+    var options = {
+        key: "{{ razorpay_key }}",
+        amount: "{{ amount_in_paise }}",
+        currency: "INR",
+        order_id: "{{ order_id }}",
+        name: "MediCare",
+        description: "Doctor Appointment Fee",
+        prefill: {
+            method: "upi",
+            vpa: upiVal
+        },
+        handler: function (response) {
+            const successUrl = "{% url 'successful_payment' %}";
+            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || '{{ order_id }}'}&doctor_id={{ doctor.id }}&appointment_id={{ appointment_id }}`;
+            window.location.href = successUrl + params;
+        },
+        modal: {
+            ondismiss: function () {
+                console.log("Payment popup closed");
+            }
+        },
+        theme: {
+            color: "#2563eb"
+        }
+    };
+    var rzp = new Razorpay(options);
+    rzp.open();
+}
+
+function payWithOtherMethods() {
+    var options = {
+        key: "{{ razorpay_key }}",
+        amount: "{{ amount_in_paise }}",
+        currency: "INR",
+        order_id: "{{ order_id }}",
+        name: "MediCare",
+        description: "Doctor Appointment Fee",
+        handler: function (response) {
+            const successUrl = "{% url 'successful_payment' %}";
+            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || '{{ order_id }}'}&doctor_id={{ doctor.id }}&appointment_id={{ appointment_id }}`;
+            window.location.href = successUrl + params;
+        },
+        modal: {
+            ondismiss: function () {
+                console.log("Payment popup closed");
+            }
+        },
+        theme: {
+            color: "#2563eb"
+        }
+    };
+    var rzp = new Razorpay(options);
+    rzp.open();
+}
+</script>
+{% endif %}
+
 <script>
 function switchTab(type) {
     const tabUpi = document.getElementById('tab-upi');
@@ -147,6 +215,11 @@ function submitMockPayment(method) {
             alert("Please enter your UPI ID or Mobile Number!");
             return;
         }
+        
+        {% if is_test_mode %}
+        openRazorpayUPI(upiVal);
+        return;
+        {% endif %}
     }
 
     // Generate random mock payment ID

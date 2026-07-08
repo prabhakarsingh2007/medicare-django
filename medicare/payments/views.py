@@ -11,6 +11,9 @@ from accounts.views import is_patient_profile_complete
 
 from django.utils.crypto import get_random_string
 
+from django.conf import settings
+import razorpay
+
 @login_required(login_url='login')
 def payment(request, id):
     doctor = get_object_or_404(Doctor, id=id)
@@ -25,13 +28,38 @@ def payment(request, id):
         ).order_by('-created_at').first()
 
     fees = doctor.fees if doctor.fees else 500
-    amount = fees
-    order_id = "mock_ord_" + get_random_string(10).lower()
+    
+    razorpay_key = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    is_test_mode = razorpay_key.startswith('rzp_test_')
+    
+    if is_test_mode:
+        try:
+            client = razorpay.Client(
+                auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+            )
+            order = client.order.create({
+                "amount": int(fees) * 100,
+                "currency": "INR",
+                "payment_capture": 1
+            })
+            order_id = order["id"]
+            amount_in_paise = order["amount"]
+        except Exception as e:
+            # Fallback to mock if API fails
+            order_id = "mock_ord_" + get_random_string(10).lower()
+            amount_in_paise = int(fees) * 100
+            is_test_mode = False
+    else:
+        order_id = "mock_ord_" + get_random_string(10).lower()
+        amount_in_paise = int(fees) * 100
 
     return render(request, "payments/payment.html", {
         "doctor": doctor,
         "order_id": order_id,
-        "amount": amount,
+        "amount": fees,
+        "amount_in_paise": amount_in_paise,
+        "razorpay_key": razorpay_key,
+        "is_test_mode": is_test_mode,
         "appointment_id": appointment.id if appointment else None
     })
 
