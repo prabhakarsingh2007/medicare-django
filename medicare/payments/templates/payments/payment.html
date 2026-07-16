@@ -10,7 +10,8 @@
      data-amount-in-paise="{{ amount_in_paise }}"
      data-doctor-id="{{ doctor.id }}"
      data-appointment-id="{{ appointment_id }}"
-     data-success-url="{% url 'successful_payment' %}">
+     data-success-url="{% url 'successful_payment' %}"
+     data-failed-url="{% url 'failed_payment' %}">
 </div>
 
 <div class="min-h-screen flex items-center justify-center bg-[#f8fafc] py-12 px-4 relative overflow-hidden">
@@ -153,6 +154,7 @@ const amountInPaise = configEl.dataset.amountInPaise;
 const doctorId = configEl.dataset.doctorId;
 const appointmentId = configEl.dataset.appointmentId;
 const successUrl = configEl.dataset.successUrl;
+const failedUrl = configEl.dataset.failedUrl;
 
 function openRazorpayUPI(upiVal) {
     var options = {
@@ -167,12 +169,13 @@ function openRazorpayUPI(upiVal) {
             vpa: upiVal
         },
         handler: function (response) {
-            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || orderId}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
+            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || orderId}&signature=${response.razorpay_signature}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
             window.location.href = successUrl + params;
         },
         modal: {
             ondismiss: function () {
                 console.log("Payment popup closed");
+                window.location.href = `${failedUrl}?error_message=Payment cancelled by user&doctor_id=${doctorId}&appointment_id=${appointmentId}&order_id=${orderId}`;
             }
         },
         theme: {
@@ -192,12 +195,13 @@ function payWithOtherMethods() {
         name: "MediCare",
         description: "Doctor Appointment Fee",
         handler: function (response) {
-            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || orderId}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
+            const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || orderId}&signature=${response.razorpay_signature}&doctor_id=${doctorId}&appointment_id=${appointmentId}`;
             window.location.href = successUrl + params;
         },
         modal: {
             ondismiss: function () {
                 console.log("Payment popup closed");
+                window.location.href = `${failedUrl}?error_message=Payment cancelled by user&doctor_id=${doctorId}&appointment_id=${appointmentId}&order_id=${orderId}`;
             }
         },
         theme: {

@@ -1,0 +1,99 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-[#f8fafc] py-12 px-4 relative overflow-hidden">
+    
+    <!-- Decorative background elements -->
+    <div class="absolute top-0 -left-10 w-96 h-96 bg-red-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+    <div class="absolute bottom-0 -right-10 w-96 h-96 bg-rose-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+
+    <div class="max-w-md w-full z-10">
+        <div class="bg-white/90 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] rounded-[2.5rem] p-8 border border-white relative text-center">
+            
+            <!-- Animated Red Failure Mark -->
+            <div class="flex justify-center mb-6">
+                <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center animate-bounce shadow-md">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight">Payment Failed</h2>
+            <p class="text-gray-500 text-sm mt-2 font-medium">We could not verify or complete your transaction.</p>
+            
+            {% if error_message %}
+            <div class="mt-4 p-3 bg-red-50/60 border border-red-100 rounded-2xl text-xs text-red-600 font-mono text-left break-words">
+                <strong>Error Details:</strong> {{ error_message }}
+            </div>
+            {% endif %}
+
+            <div class="mt-6 space-y-4 text-left">
+                <!-- Appointment details card -->
+                <div class="bg-slate-50 rounded-3xl p-6 border border-slate-100 space-y-4">
+                    <div>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Doctor</span>
+                        <span class="text-base font-bold text-slate-800">Dr. {{ doctor.name }}</span>
+                        <span class="text-xs text-red-600 block font-semibold">{{ doctor.specialist.name|default:"Medical Specialist" }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 border-t border-dashed border-slate-200 pt-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Date</span>
+                            <span class="text-sm font-bold text-slate-700">{{ appointment.date|date:"d M Y"|default:appointment.date }}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Time Slot</span>
+                            <span class="text-sm font-bold text-slate-700">{{ appointment.time }}</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-dashed border-slate-200 pt-3 space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-500 font-medium">Patient Name:</span>
+                            <span class="text-slate-800 font-bold">{{ appointment.name }}</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-500 font-medium">Payment Status:</span>
+                            <span class="text-red-600 font-bold uppercase">Unverified / Failed</span>
+                        </div>
+                        <div class="flex justify-between text-sm pt-2 border-t border-slate-200/60">
+                            <span class="text-slate-800 font-extrabold">Amount Owed</span>
+                            <span class="text-blue-600 font-black">₹{{ amount }}.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Retry button -->
+            <a href="{% url 'payment' id=doctor.id %}?appointment_id={{ appointment.id }}"
+                class="w-full mt-6 bg-gradient-to-r from-red-600 to-rose-500 text-white font-bold py-4 rounded-2xl
+                       shadow-lg shadow-red-200 hover:shadow-red-300 hover:-translate-y-0.5 active:scale-95
+                       transition duration-300 flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4"></path>
+                </svg>
+                <span>Retry Payment</span>
+            </a>
+
+            <!-- Return button -->
+            <a href="{% url 'patient_dashboard' %}"
+                class="w-full mt-3 bg-white border border-slate-200 text-slate-700 font-bold py-3 rounded-2xl
+                       hover:bg-slate-50 transition duration-300 flex items-center justify-center">
+                <span>Go to Dashboard</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob { animation: blob 7s infinite; }
+.animation-delay-2000 { animation-delay: 2s; }
+</style>
+{% endblock %}
