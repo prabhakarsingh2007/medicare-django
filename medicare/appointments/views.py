@@ -105,23 +105,64 @@ def book_appointment(request, slug):
 
             notify_appointment_booked(appointment)
 
-            if request.POST.get("payment_method") == "offline":
+            import razorpay
+            from django.utils.crypto import get_random_string
+
+            razorpay_key = getattr(settings, 'RAZORPAY_KEY_ID', '')
+            is_test_mode = bool(razorpay_key and razorpay_key.startswith('rzp_test_'))
+            order_id = ""
+            amount_in_paise = int(fees) * 100
+
+            if is_test_mode:
+                try:
+                    client = razorpay.Client(
+                        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+                    )
+                    order = client.order.create({
+                        "amount": amount_in_paise,
+                        "currency": "INR",
+                        "payment_capture": 1
+                    })
+                    order_id = order["id"]
+                    amount_in_paise = order["amount"]
+                except Exception as e:
+                    is_test_mode = False
+
+            if is_test_mode:
+                return JsonResponse({
+                    'success': True,
+                    'pay_required': True,
+                    'razorpay_options': {
+                        'key': razorpay_key,
+                        'amount': amount_in_paise,
+                        'currency': 'INR',
+                        'order_id': order_id,
+                        'name': 'MediCare',
+                        'description': 'Doctor Appointment Fee',
+                        'prefill': {
+                            'name': full_name,
+                            'email': email,
+                            'contact': phone
+                        },
+                        'theme': {
+                            'color': '#2563eb'
+                        }
+                    },
+                    'success_url': reverse('successful_payment'),
+                    'failed_url': reverse('failed_payment'),
+                    'doctor_id': doctor.id,
+                    'appointment_id': appointment.id,
+                    'order_id': order_id
+                })
+            else:
                 success_url = reverse('my_appointments')
                 return JsonResponse({
                     'success': True,
                     'pay_required': False,
                     'appointment_id': appointment.id,
                     'redirect_url': success_url,
-                    'message': 'Appointment booked successfully. You can pay at the clinic.'
+                    'message': 'Appointment booked successfully!'
                 })
-
-            # Direct the user to the custom mock payment page
-            payment_url = reverse('payment', kwargs={'id': doctor.id}) + f"?appointment_id={appointment.id}"
-            return JsonResponse({
-                'success': True,
-                'pay_required': True,
-                'redirect_url': payment_url
-            })
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Server Error: {str(e)}'})

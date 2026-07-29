@@ -41,7 +41,7 @@ def send_email_notification(subject, message, recipient_list):
         print(f" Message: {message}")
         print(f" Recipients: {recipients}")
         print("="*50 + "\n")
-        return True
+        return False
 
 
 def send_sms_notification(phone, message):

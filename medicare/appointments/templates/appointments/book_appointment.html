@@ -51,29 +51,10 @@
             <p class="col-span-full text-gray-400 text-sm italic">Pehle date select karein...</p>
           </div>
         </div>
-        <div class="col-span-1 md:col-span-2 space-y-3 mt-4">
-          <label class="text-sm font-semibold text-gray-700">Payment Method</label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition duration-200">
-              <input type="radio" name="payment_method" value="online" checked class="w-5 h-5 text-blue-600 focus:ring-blue-500">
-              <div>
-                <p class="font-bold text-gray-800 text-sm">Online Payment</p>
-                <p class="text-xs text-gray-500">Pay securely via Razorpay</p>
-              </div>
-            </label>
-            <label class="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition duration-200">
-              <input type="radio" name="payment_method" value="offline" class="w-5 h-5 text-blue-600 focus:ring-blue-500">
-              <div>
-                <p class="font-bold text-gray-800 text-sm">Pay at Clinic</p>
-                <p class="text-xs text-gray-500">Book directly, pay offline</p>
-              </div>
-            </label>
-          </div>
-        </div>
       </div>
 
       <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition duration-300">
-        Proceed to Payment
+        Book Appointment
       </button>
     </form>
   </div>
@@ -142,20 +123,11 @@ function generateSlots() {
 }
 dateInput.addEventListener('change', generateSlots);
 
-// --- 2. PAYMENT & SUBMIT LOGIC ---
+// --- 2. SUBMIT LOGIC ---
 const submitBtn = document.getElementById("submitBtn");
-document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        if (this.value === 'offline') {
-            submitBtn.innerHTML = "Book Appointment";
-        } else {
-            submitBtn.innerHTML = "Proceed to Payment";
-        }
-    });
-});
 
 document.getElementById("appointmentForm").addEventListener("submit", function(e) {
-    e.preventDefault(); // JSON screen par aane se rokne ke liye ye zaroori hai
+    e.preventDefault();
 
     if (!hiddenTimeInput.value) {
         alert("Please select a time slot!");
@@ -163,13 +135,8 @@ document.getElementById("appointmentForm").addEventListener("submit", function(e
     }
 
     const form = this;
-    const paymentMethod = form.querySelector('input[name="payment_method"]:checked').value;
     submitBtn.disabled = true;
-    if (paymentMethod === 'offline') {
-        submitBtn.innerHTML = "Booking Appointment...";
-    } else {
-        submitBtn.innerHTML = "Processing Payment...";
-    }
+    submitBtn.innerHTML = "Booking Appointment...";
 
     // Backend se Redirect URL mangwana
     fetch(form.action, {
@@ -180,21 +147,42 @@ document.getElementById("appointmentForm").addEventListener("submit", function(e
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            if (!data.pay_required && data.message) {
-                alert(data.message);
+            if (data.pay_required) {
+                const options = {
+                    ...data.razorpay_options,
+                    handler: function (response) {
+                        const params = `?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id || data.order_id}&signature=${response.razorpay_signature}&doctor_id=${data.doctor_id}&appointment_id=${data.appointment_id}`;
+                        window.location.href = data.success_url + params;
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            console.log("Payment popup closed");
+                            window.location.href = `${data.failed_url}?error_message=Payment cancelled by user&doctor_id=${data.doctor_id}&appointment_id=${data.appointment_id}&order_id=${data.order_id}`;
+                        }
+                    }
+                };
+                const rzp = new window.Razorpay(options);
+                rzp.open();
+                
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = "Book Appointment";
+            } else {
+                if (data.message) {
+                    alert(data.message);
+                }
+                window.location.href = data.redirect_url || "{% url 'my_appointments' %}";
             }
-            window.location.href = data.redirect_url || "{% url 'my_appointments' %}";
         } else {
             alert("Error: " + data.message);
             submitBtn.disabled = false;
-            submitBtn.innerHTML = paymentMethod === 'offline' ? "Book Appointment" : "Proceed to Payment";
+            submitBtn.innerHTML = "Book Appointment";
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert("Server error. Please try again.");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = paymentMethod === 'offline' ? "Book Appointment" : "Proceed to Payment";
+        submitBtn.innerHTML = "Book Appointment";
     });
 });
 </script>

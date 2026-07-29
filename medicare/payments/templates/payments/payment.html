@@ -31,10 +31,6 @@
                 </div>
             </div>
 
-            <div class="mt-12 text-center">
-                <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight">Checkout</h2>
-                <p class="text-gray-500 text-sm mt-1 font-medium italic">Order ID: #{{ order_id|slice:":12" }}</p>
-            </div>
 
             <!-- Booking Summary -->
             <div class="mt-6 space-y-4">
@@ -78,7 +74,7 @@
             <div id="pane-upi" class="mt-6 space-y-4">
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">UPI ID or Mobile Number</label>
-                    <input type="text" id="upiInput" placeholder="e.g. 9876543210@upi or 9876543210" 
+                    <input type="text" id="upiInput" placeholder="e.g. user@okaxis, 9876543210@ybl" 
                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium">
                 </div>
                 <button onclick="submitMockPayment('upi')"
@@ -231,14 +227,22 @@ function switchTab(type) {
     }
 }
 
+function validateUPI(upi) {
+    const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+    return upiRegex.test(upi);
+}
+
 function submitMockPayment(method) {
     if (method === 'upi') {
         const upiVal = document.getElementById('upiInput').value.trim();
         if (!upiVal) {
-            alert("Please enter your UPI ID or Mobile Number!");
+            alert("Please enter your UPI ID!");
             return;
         }
-        
+        if (!validateUPI(upiVal)) {
+            alert("Please enter a valid UPI ID (e.g., user@okaxis, 9876543210@ybl)!");
+            return;
+        }
         if (isTestMode) {
             openRazorpayUPI(upiVal);
             return;
