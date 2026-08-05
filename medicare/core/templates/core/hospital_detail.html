@@ -1,5 +1,8 @@
 {% extends "core/base.html" %}
 
+{% block title %}{{ hospital.name }} - Doctors List & Appointment Booking | MediCare{% endblock %}
+{% block meta_description %}Book appointments with top-rated doctors at {{ hospital.name }} via MediCare. View hospital address, specialist departments, and doctor fees.{% endblock %}
+
 {% block content %}
 <div class="bg-[#f8fafc] min-h-screen">
 
@@ -87,7 +90,22 @@
         <div>
             <h2 class="text-2xl font-black text-slate-800 mb-6">Our Doctors</h2>
             {% if doctors %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Hospital Doctors Skeleton Loader Grid -->
+            <div id="hospital-doctors-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for i in "123" %}
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-pulse">
+                    <div class="h-48 bg-slate-200 rounded-xl mb-4"></div>
+                    <div class="h-6 bg-slate-200 rounded-md w-3/4 mb-3"></div>
+                    <div class="h-4 bg-slate-200 rounded-md w-1/2 mb-4"></div>
+                    <div class="flex items-center justify-between mt-6">
+                        <div class="h-6 bg-slate-200 rounded-md w-1/4"></div>
+                        <div class="h-10 bg-slate-200 rounded-xl w-1/3"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div id="hospital-doctors-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for doctor in doctors %}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                     <div class="h-48 relative overflow-hidden">
@@ -119,6 +137,7 @@
                 </div>
                 {% endfor %}
             </div>
+
             {% else %}
             <div class="text-center py-16 bg-white rounded-2xl border border-slate-200">
                 <span class="text-5xl block mb-3">👨‍⚕️</span>
@@ -128,4 +147,29 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(function() {
+            const skeleton = document.getElementById("hospital-doctors-skeleton");
+            const grid = document.getElementById("hospital-doctors-grid");
+            if (skeleton && grid) {
+                skeleton.style.display = "none";
+                grid.classList.remove("hidden");
+                grid.classList.add("animate-fade-in-down");
+            }
+        }, 600);
+    });
+</script>
+
+<style>
+    @keyframes fade-in-down {
+        0% { opacity: 0; transform: translateY(-10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-down {
+        animation: fade-in-down 0.4s ease-out forwards;
+    }
+</style>
 {% endblock %}
+

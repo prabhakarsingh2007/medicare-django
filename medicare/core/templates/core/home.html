@@ -1,5 +1,8 @@
 {% extends "core/base.html" %}
 
+{% block title %}MediCare - Book Top Online Doctor Appointments & Specialist Care{% endblock %}
+{% block meta_description %}Book doctor appointments online with leading specialists at MediCare. Find top-rated cardiologists, neurologists, gynecologists, and pediatricians.{% endblock %}
+
 {% block content %}
 <div class="bg-[#f8fafc] min-h-screen font-sans">
 
@@ -53,12 +56,24 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Skeleton Loader Grid -->
+        <div id="specialist-skeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {% for i in "1234" %}
+            <div class="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm animate-pulse">
+                <div class="h-48 bg-slate-200 rounded-2xl mb-6"></div>
+                <div class="h-6 bg-slate-200 rounded-md w-3/4 mx-auto mb-3"></div>
+                <div class="h-4 bg-slate-200 rounded-md w-1/2 mx-auto mb-6"></div>
+                <div class="h-10 bg-slate-200 rounded-xl"></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="specialist-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {% for sp in specialists %}
             <a href="{% url 'specialist_doctors' sp.id %}" class="group">
                 <div
                     class="relative bg-white rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-500 border border-slate-100">
-
+ 
                     <div class="h-56 relative overflow-hidden">
                         {% if sp.icon %}
                         <img src="{{ sp.icon.url }}" alt="{{ sp.name }}"
@@ -69,18 +84,18 @@
                             <span class="text-5xl opacity-40">🏥</span>
                         </div>
                         {% endif %}
-
+ 
                         <div
                             class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                         </div>
                     </div>
-
+ 
                     <div class="p-6 text-center">
                         <h3 class="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                             {{ sp.name }}
                         </h3>
                         <p class="text-sm text-slate-400 mt-2 mb-4">Certified Clinical Experts</p>
-
+ 
                         <div
                             class="inline-flex items-center justify-center w-full py-3 px-4 bg-blue-50 text-blue-700 rounded-2xl font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
                             View Doctors
@@ -90,7 +105,7 @@
                             </svg>
                         </div>
                     </div>
-
+ 
                     <div class="absolute top-4 left-4">
                         <span
                             class="bg-white/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full text-blue-600 shadow-sm">
@@ -108,11 +123,33 @@
     </section>
 </div>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(function() {
+            const skeleton = document.getElementById("specialist-skeleton");
+            const grid = document.getElementById("specialist-grid");
+            if (skeleton && grid) {
+                skeleton.style.display = "none";
+                grid.classList.remove("hidden");
+                grid.classList.add("animate-fade-in-down");
+            }
+        }, 600);
+    });
+</script>
+
 <style>
     /* Hero image mask effect */
     .mask-linear-gradient {
         mask-image: linear-gradient(to left, black 60%, transparent 100%);
         -webkit-mask-image: linear-gradient(to left, black 60%, transparent 100%);
     }
+    @keyframes fade-in-down {
+        0% { opacity: 0; transform: translateY(-10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-down {
+        animation: fade-in-down 0.4s ease-out forwards;
+    }
 </style>
+
 {% endblock %}

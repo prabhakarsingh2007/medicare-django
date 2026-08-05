@@ -88,7 +88,7 @@ def book_appointment(request, slug):
                 return JsonResponse({'success': False, 'message': 'This slot is already booked.'})
 
             fees = doctor.fees if doctor.fees else 500
-            amount_in_paise = int(fees) * 100
+            amount_in_paise = fees * 100
 
             appointment = Appointment.objects.create(
                 user=request.user,
@@ -111,14 +111,14 @@ def book_appointment(request, slug):
             razorpay_key = getattr(settings, 'RAZORPAY_KEY_ID', '')
             is_test_mode = bool(razorpay_key and razorpay_key.startswith('rzp_test_'))
             order_id = ""
-            amount_in_paise = int(fees) * 100
+            amount_in_paise = fees * 100
 
             if is_test_mode:
                 try:
                     client = razorpay.Client(
                         auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
                     )
-                    order = client.order.create({
+                    order = getattr(client, 'order').create({
                         "amount": amount_in_paise,
                         "currency": "INR",
                         "payment_capture": 1
@@ -272,7 +272,7 @@ def cancel_appointment(request, id):
         target_type="appointment",
         target_id=str(appointment.id),
         description="Patient cancelled appointment",
-        extra_data={"doctor_id": appointment.doctor_id},
+        extra_data={"doctor_id": appointment.doctor.id},
     )
     messages.success(request, "Appointment cancelled successfully")
     return redirect('my_appointments')
@@ -492,7 +492,7 @@ def download_appointment_slip(request, id):
         pdf.drawString(cx, inner_y + inner_h - 14, k.upper())
         pdf.setFont("Helvetica-Bold", 11)
         pdf.setFillColor(colors.HexColor("#1f3a2d"))
-        pdf.drawString(cx, inner_y + 13, str(v)[:30])
+        pdf.drawString(cx, inner_y + 13, v[:30])
 
     footer_y = card_y + 16
     pdf.setFillColor(colors.HexColor("#165a9a"))

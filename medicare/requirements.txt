@@ -21,4 +21,4 @@ cloudinary==1.41.0
 django-cloudinary-storage==0.3.0
 django-stubs==6.0.6
 django-stubs-ext==6.0.6
-
+types-reportlab==4.5.1.20260728

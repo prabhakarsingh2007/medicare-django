@@ -3,7 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicare</title>
+    <title>{% block title %}MediCare - Book Top Online Doctor Appointments & Specialist Care{% endblock %}</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}Book doctor appointments online with leading specialists at MediCare. Find top-rated cardiologists, neurologists, gynecologists, and pediatricians.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}doctor appointment, online doctor booking, healthcare platform, find doctors near me, book doctor slot, MediCare{% endblock %}">
+    <meta name="author" content="MediCare Team">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}MediCare - Book Top Online Doctor Appointments & Specialist Care{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Book doctor appointments online with leading specialists at MediCare. Find top-rated cardiologists, neurologists, gynecologists, and pediatricians.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}https://medicare-r8cz.onrender.com/static/images/og-share.jpg{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:site_name" content="MediCare">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}MediCare - Book Top Online Doctor Appointments & Specialist Care{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Book doctor appointments online with leading specialists at MediCare. Find top-rated cardiologists, neurologists, gynecologists, and pediatricians.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}https://medicare-r8cz.onrender.com/static/images/og-share.jpg{% endblock %}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
@@ -26,6 +47,17 @@
     </style>
 </head>
 <body class="min-h-screen bg-[#f8fafc] text-slate-800 antialiased">
+    
+    <!-- Global Centered Loading Spinner -->
+    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#f8fafc] transition-opacity duration-300">
+        <div class="flex flex-col items-center gap-4">
+            <div class="relative w-16 h-16">
+                <div class="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-25"></div>
+                <div class="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <span class="text-sm font-bold text-slate-600 tracking-wider uppercase animate-pulse">Loading MediCare...</span>
+        </div>
+    </div>
     
     {% include "core/header.html" %}
     {% if messages %}
@@ -68,5 +100,29 @@
 
     {% include "core/footer.html" %}
     
+    <script>
+        // Handle global loading spinner fade out
+        window.addEventListener('load', function () {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(function () {
+                    loader.style.display = 'none';
+                }, 300);
+            }
+        });
+
+        // Show spinner on page navigation or form submission
+        window.addEventListener('beforeunload', function () {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+                loader.style.backgroundColor = 'rgba(248, 250, 252, 0.85)';
+                loader.style.backdropFilter = 'blur(8px)';
+            }
+        });
+    </script>
 </body>
+
 </html>

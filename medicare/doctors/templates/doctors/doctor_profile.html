@@ -1,5 +1,8 @@
 {% extends "core/base.html" %}
 
+{% block title %}Dr. {{ doctor.name }} - {{ doctor.specialist.name }} Specialist | MediCare{% endblock %}
+{% block meta_description %}View Dr. {{ doctor.name }}'s profile, qualifications, experience, and consultation fees. Book your appointment online securely.{% endblock %}
+
 {% block content %}
 <div class="min-h-screen bg-gray-50 py-12 px-4">
     <div class="max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
